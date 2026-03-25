@@ -23,11 +23,11 @@ def send_alert(message: str, subject: str = None, to_email: str = None) -> bool:
     email_subject = subject or "🚨 Security Alert — Tech Africa IT Secure Access System"
 
     if not brevo_key:
-        print("[EMAIL ERROR] BREVO_API_KEY is not set. Cannot send email.")
+        print("[EMAIL ERROR] BREVO_API_KEY is not set. Cannot send email.", flush=True)
         return False
 
     if not sender_email or not recipient:
-        print("[EMAIL ERROR] Missing sender or recipient email.")
+        print(f"[EMAIL ERROR] Missing sender ({sender_email}) or recipient ({recipient}) email.", flush=True)
         return False
 
     now  = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
@@ -39,6 +39,8 @@ def send_alert(message: str, subject: str = None, to_email: str = None) -> bool:
         f"Admin Dashboard:\n"
         f"{os.environ.get('APP_URL', 'https://your-app.onrender.com')}/admin/dashboard\n"
     )
+
+    print(f"[EMAIL DEBUG] Attempting to send email to {recipient} via Brevo...", flush=True)
 
     try:
         response = requests.post(
@@ -58,14 +60,14 @@ def send_alert(message: str, subject: str = None, to_email: str = None) -> bool:
         )
 
         if response.status_code in (200, 201):
-            print(f"[EMAIL SUCCESS] Sent to {recipient} | Subject: {email_subject}")
+            print(f"[EMAIL SUCCESS] Sent to {recipient} | Subject: {email_subject}", flush=True)
             return True
         else:
-            print(f"[EMAIL ERROR] Brevo returned {response.status_code}: {response.text}")
+            print(f"[EMAIL ERROR] Brevo returned {response.status_code}: {response.text}", flush=True)
             return False
 
     except Exception as e:
-        print(f"[EMAIL ERROR] Unexpected error sending email: {e}")
+        print(f"[EMAIL ERROR] Unexpected error sending email: {e}", flush=True)
         return False
 
 

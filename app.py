@@ -12,11 +12,6 @@ from intrusion import is_suspicious_time
 from email_alert import send_alert, send_intrusion_alert
 from types import SimpleNamespace
 
-# from intrusion import is_suspicious_time # This was changed to os_suspicious_time in the instruction, but the original code uses 'intrusion'. I will keep 'intrusion' as it's not explicitly removed, only 'os_suspicious_time' was added in the diff, which is not in the original code.
-# from datetime import datetime # Redundant, already imported with timedelta
-# from types import SimpleNamespace # Already imported
-# import bcrypt # Already imported
-
 from sql_queries import (
     # Employee
     get_user_by_email_or_username,
@@ -108,9 +103,6 @@ def to_log(d):
     return obj
 
 
-# ─────────────────────────────────────────────
-#  Seed default data on first run
-# ─────────────────────────────────────────────
 # ─────────────────────────────────────────────
 #  Seed default data on first run
 # ─────────────────────────────────────────────
