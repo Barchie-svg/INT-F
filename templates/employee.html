@@ -1,110 +1,853 @@
 {% extends "layout.html" %}
+
 {% block content %}
-<div class="main-container">
-
-  <!-- Page Header -->
-  <div class="page-header d-flex justify-content-between align-items-center flex-wrap gap-3">
-    <div>
-      <h1 class="page-title"><i class="fa-solid fa-id-card me-2" style="color: var(--accent);"></i>My Dashboard</h1>
-      <p class="page-subtitle">Your personal account information and security status</p>
-    </div>
-  </div>
-
-  <!-- Profile Card -->
-  <div class="profile-card">
-
-    <!-- Profile Header -->
-    <div class="profile-header">
-      <div class="profile-avatar">
-        {{ (employee.name[0] if employee.name else (employee.username[0] if employee.username else 'U')).upper() }}
+<div class="dashboard-container">
+  <!-- Sidebar -->
+  <aside class="dashboard-sidebar" id="empSidebar">
+    <div class="sidebar-header">
+      <div class="sidebar-logo">
+        <i class="fa-solid fa-shield-halved"></i>
+        <span>Tech Africa IT</span>
       </div>
-      <div class="profile-name">{{ employee.name or employee.username or "Employee" }}</div>
-      <div style="margin-top: 8px;">
-        {% if employee.status == "Active" %}
-          <span class="badge-status badge-active">
-            <i class="fa-solid fa-circle-check" style="font-size: 0.7rem;"></i> Active
+    </div>
+    <nav class="sidebar-nav">
+      <a href="#hub" class="nav-item active" data-section="hub"><i class="fa-solid fa-gauge-high"></i><span>Dashboard</span></a>
+      <a href="#profile" class="nav-item" data-section="profile"><i class="fa-solid fa-id-card-clip"></i><span>My Profile</span></a>
+      <a href="#tasks" class="nav-item" data-section="tasks"><i class="fa-solid fa-list-check"></i><span>My Tasks</span></a>
+      <a href="#projects" class="nav-item" data-section="projects"><i class="fa-solid fa-layer-group"></i><span>Projects</span></a>
+      <a href="#kpis" class="nav-item" data-section="kpis"><i class="fa-solid fa-chart-line"></i><span>Performance</span></a>
+      <a href="#team" class="nav-item" data-section="team"><i class="fa-solid fa-people-group"></i><span>Team Directory</span></a>
+      <a href="#announcements" class="nav-item" data-section="announcements"><i class="fa-solid fa-bullhorn"></i><span>Notice Board</span></a>
+      <a href="#tools" class="nav-item" data-section="tools"><i class="fa-solid fa-toolbox"></i><span>Quick Tools</span></a>
+      <a href="#help" class="nav-item" data-section="help"><i class="fa-solid fa-circle-question"></i><span>Help & Support</span></a>
+      <a href="#security" class="nav-item" data-section="security"><i class="fa-solid fa-shield-virus"></i><span>Security</span></a>
+      <div class="nav-spacer"></div>
+      <a href="/logout" class="nav-item logout-nav"><i class="fa-solid fa-right-from-bracket"></i><span>Sign Out</span></a>
+    </nav>
+  </aside>
+
+  <!-- Main -->
+  <main class="main-content">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        {% for category, message in messages %}
+          <div class="alert alert-{{ category }} alert-dismissible fade show mb-4" role="alert">
+            {{ message }}<button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+          </div>
+        {% endfor %}
+      {% endif %}
+    {% endwith %}
+
+    <!-- HUB SECTION -->
+    <div id="hub" class="dashboard-section section-active">
+      <header class="dashboard-header">
+        <div class="header-welcome">
+          <h1 class="header-title">Welcome, <span class="highlight">{{ employee.name }}</span></h1>
+          <p class="header-subtitle">Tech Africa IT Portal &bull; <span id="liveClock">--:--:--</span></p>
+        </div>
+        <div class="d-flex align-items-center gap-3">
+          <span class="status-badge status-{{ employee.status|lower }}">
+            <i class="fa-solid fa-circle-check"></i> {{ employee.status }}
           </span>
+        </div>
+      </header>
+
+      <div class="dashboard-grid">
+        <!-- Identity Card -->
+        <section class="grid-col-8">
+          <div class="card-glass identity-card">
+            <div class="card-header"><h3><i class="fa-solid fa-id-card"></i> Identity & Access</h3></div>
+            <div class="card-body">
+              <div class="identity-stats">
+                <div class="stat-item"><span class="stat-label">Employee ID</span><span class="stat-value">{{ employee.employee_number }}</span></div>
+                <div class="stat-item"><span class="stat-label">Last Known IP</span><span class="stat-value">{{ employee.last_ip_address or '0.0.0.0' }}</span></div>
+                <div class="stat-item"><span class="stat-label">Role</span><span class="stat-value badge-role">{{ employee.role }}</span></div>
+                <div class="stat-item"><span class="stat-label">Recovery Email</span><span class="stat-value small" title="{{ employee.emergency_email or 'Not Set' }}">{{ (employee.emergency_email or 'None Set')[:22] }}{% if employee.emergency_email and employee.emergency_email|length > 22 %}…{% endif %}</span></div>
+              </div>
+              <div class="last-login d-flex justify-content-between align-items-center">
+                <div><i class="fa-solid fa-clock-rotate-left"></i> Last Login: <strong>{{ employee.last_login or 'N/A' }}</strong></div>
+                <div class="text-secondary small">Failed Attempts: <span class="{% if employee.failed_attempts >= 2 %}text-danger fw-bold{% endif %}">{{ employee.failed_attempts }} / 3</span></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Pulse Check -->
+        <section class="grid-col-4">
+          <div class="card-glass kpi-summary-card text-center">
+            <div class="card-header"><h3><i class="fa-solid fa-bullseye"></i> Pulse Check</h3></div>
+            <div class="card-body">
+              <div class="circular-progress-box">
+                <svg viewBox="0 0 36 36" class="circular-chart accent">
+                  <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                  <path class="circle" stroke-dasharray="85, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                  <text x="18" y="20.35" class="percentage">85%</text>
+                </svg>
+              </div>
+              <p class="small text-secondary mt-2">Overall Task Velocity</p>
+              <div class="d-flex justify-content-around mt-3 pt-3" style="border-top:1px solid rgba(255,255,255,0.06)">
+                <div class="text-center"><div style="font-size:1.3rem;font-weight:800;color:var(--accent)">12</div><div class="x-small text-secondary">Done</div></div>
+                <div class="text-center"><div style="font-size:1.3rem;font-weight:800;color:#ffc107">3</div><div class="x-small text-secondary">Pending</div></div>
+                <div class="text-center"><div style="font-size:1.3rem;font-weight:800;color:#00b894">99.9%</div><div class="x-small text-secondary">Uptime</div></div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <!-- Quick Stats Row -->
+        <section class="grid-col-12">
+          <div class="dashboard-grid" style="gap:16px">
+            <div class="grid-col-3"><div class="card-glass mini-stat"><i class="fa-solid fa-ticket" style="color:#6c5ce7;font-size:1.4rem"></i><div><div class="mini-stat-val">5</div><div class="mini-stat-lbl">Open Tickets</div></div></div></div>
+            <div class="grid-col-3"><div class="card-glass mini-stat"><i class="fa-solid fa-calendar-check" style="color:#00b894;font-size:1.4rem"></i><div><div class="mini-stat-val">18</div><div class="mini-stat-lbl">Days This Month</div></div></div></div>
+            <div class="grid-col-3"><div class="card-glass mini-stat"><i class="fa-solid fa-message" style="color:#0984e3;font-size:1.4rem"></i><div><div class="mini-stat-val">2</div><div class="mini-stat-lbl">Unread Messages</div></div></div></div>
+            <div class="grid-col-3"><div class="card-glass mini-stat"><i class="fa-solid fa-layer-group" style="color:#fd79a8;font-size:1.4rem"></i><div><div class="mini-stat-val">3</div><div class="mini-stat-lbl">Active Projects</div></div></div></div>
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <!-- PROFILE SECTION -->
+    <div id="profile" class="dashboard-section">
+      <h2 class="section-title mb-4"><i class="fa-solid fa-id-card-clip me-2"></i> My Profile</h2>
+      <div class="dashboard-grid">
+        <div class="grid-col-6">
+          <div class="card-glass">
+            <div class="card-header"><h3><i class="fa-solid fa-user"></i> Personal Info</h3></div>
+            <div class="card-body">
+              <div class="profile-avatar-row">
+                <div class="profile-avatar">{{ (employee.name[0] if employee.name else 'U').upper() }}</div>
+                <div>
+                  <h4 class="mb-1">{{ employee.name }}</h4>
+                  <span class="badge-role">{{ employee.role }}</span>
+                </div>
+              </div>
+              <hr style="border-color:rgba(255,255,255,0.06);margin:20px 0">
+              <table class="profile-table">
+                <tr><td class="stat-label">Email</td><td>{{ employee.email }}</td></tr>
+                <tr><td class="stat-label">Username</td><td>{{ employee.username }}</td></tr>
+                <tr><td class="stat-label">Employee No.</td><td>{{ employee.employee_number }}</td></tr>
+                <tr><td class="stat-label">Account Status</td><td><span class="status-badge status-{{ employee.status|lower }}" style="display:inline-flex;padding:4px 12px;font-size:0.78rem"><i class="fa-solid fa-circle-check"></i>{{ employee.status }}</span></td></tr>
+                <tr><td class="stat-label">Department</td><td>Information Technology</td></tr>
+                <tr><td class="stat-label">Office</td><td>Nairobi, Kenya</td></tr>
+              </table>
+            </div>
+          </div>
+        </div>
+        <div class="grid-col-6">
+          <div class="card-glass">
+            <div class="card-header"><h3><i class="fa-solid fa-shield-halved"></i> Security Status</h3></div>
+            <div class="card-body">
+              <div class="security-meter-list">
+                <div class="sec-meter-item"><span>Account Strength</span><div class="sec-bar-wrap"><div class="sec-bar" style="width:90%;background:#00b894"></div></div><span class="sec-val">Strong</span></div>
+                <div class="sec-meter-item"><span>MFA Status</span><div class="sec-bar-wrap"><div class="sec-bar" style="width:60%;background:#ffc107"></div></div><span class="sec-val">Partial</span></div>
+                <div class="sec-meter-item"><span>Session Health</span><div class="sec-bar-wrap"><div class="sec-bar" style="width:100%;background:#6c5ce7"></div></div><span class="sec-val">Excellent</span></div>
+                <div class="sec-meter-item"><span>Recovery Email</span><div class="sec-bar-wrap"><div class="sec-bar" style="width:{% if employee.emergency_email %}100%{% else %}0%{% endif %};background:#0984e3"></div></div><span class="sec-val">{% if employee.emergency_email %}Set{% else %}Not Set{% endif %}</span></div>
+              </div>
+              <div class="mt-4 p-3" style="background:rgba(108,92,231,0.07);border-radius:10px;font-size:0.85rem;color:var(--text-secondary)">
+                <i class="fa-solid fa-circle-info me-2" style="color:var(--accent)"></i>
+                Last login was recorded on <strong style="color:var(--text-primary)">{{ employee.last_login or 'N/A' }}</strong> from IP <strong style="color:var(--text-primary)">{{ employee.last_ip_address or 'Unknown' }}</strong>.
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TASKS SECTION -->
+    <div id="tasks" class="dashboard-section">
+      <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2 class="section-title mb-0"><i class="fa-solid fa-list-check me-2"></i> My Assignments</h2>
+        <button class="btn btn-sm btn-outline-primary" onclick="addTask()"><i class="fa-solid fa-plus me-1"></i> Add Task</button>
+      </div>
+      <div class="card-glass task-card">
+        <div class="card-body">
+          <ul class="task-list" id="taskList">
+            {% if tasks %}
+              {% for task in tasks %}
+                <li class="task-item" data-id="{{ task.id }}" {% if task.is_completed %}data-done="true"{% endif %}>
+                  <button class="task-check {% if task.is_completed %}done{% endif %}" onclick="toggleTask('{{ task.id }}', this)">
+                    <i class="fa-solid fa-check"></i>
+                  </button>
+                  <div class="task-text">
+                    <span class="task-title {% if task.is_completed %}done-text{% endif %}">{{ task.title }}</span>
+                    <span class="task-meta"><i class="fa-solid fa-clock me-1 text-info"></i>Added recently</span>
+                  </div>
+                  <button class="btn btn-sm text-danger ms-auto" style="border:none;background:transparent" onclick="deleteTask('{{ task.id }}', this)"><i class="fa-solid fa-trash"></i></button>
+                </li>
+              {% endfor %}
+            {% else %}
+              <li class="task-item" id="noTasksMsg" style="border-bottom:none;justify-content:center;color:var(--text-secondary)">
+                <em>No assignments available. Click "Add Task" to create one.</em>
+              </li>
+            {% endif %}
+          </ul>
+        </div>
+        <div class="card-footer-info"><i class="fa-solid fa-circle-info me-1"></i> Click the circle to mark a task complete. Click the trash icon to delete.</div>
+      </div>
+    </div>
+
+    <!-- PROJECTS SECTION -->
+    <div id="projects" class="dashboard-section">
+      <h2 class="section-title mb-4"><i class="fa-solid fa-layer-group me-2"></i> Project & Team Access</h2>
+      <div class="card-glass">
+        <div class="card-header d-flex justify-content-between">
+          <h3>Active Projects</h3>
+          <button class="btn btn-sm btn-outline-primary"><i class="fa-solid fa-plus me-1"></i> Request Access</button>
+        </div>
+        <div class="card-body">
+          <div class="project-list">
+            <div class="project-item">
+              <div class="proj-icon"><i class="fa-solid fa-code-branch"></i></div>
+              <div class="proj-info"><h6>Core API Integration v3.0</h6><p class="small text-secondary">Backend Team &bull; Lead: Sarah Jenkins &bull; <span class="badge bg-success bg-opacity-25 text-success" style="font-size:0.7rem">On Track</span></p></div>
+              <div class="proj-links">
+                <a href="#" class="btn-icon-link" title="Jira"><i class="fa-brands fa-jira"></i></a>
+                <a href="#" class="btn-icon-link" title="Confluence"><i class="fa-brands fa-confluence"></i></a>
+                <a href="#" class="btn-icon-link" title="GitHub"><i class="fa-brands fa-github"></i></a>
+              </div>
+              <div class="proj-progress"><div class="mini-progress-track"><div class="mini-progress-fill" style="width:68%"></div></div><span style="font-size:0.72rem;color:var(--text-secondary)">68%</span></div>
+            </div>
+            <div class="project-item">
+              <div class="proj-icon"><i class="fa-solid fa-shield-virus"></i></div>
+              <div class="proj-info"><h6>Tech Africa IT Security Audit Phase 2</h6><p class="small text-secondary">Security Team &bull; Lead: Admin &bull; <span class="badge bg-warning bg-opacity-25 text-warning" style="font-size:0.7rem">In Review</span></p></div>
+              <div class="proj-links">
+                <a href="#" class="btn-icon-link"><i class="fa-solid fa-chart-pie"></i></a>
+                <a href="#" class="btn-icon-link"><i class="fa-solid fa-file-lines"></i></a>
+              </div>
+              <div class="proj-progress"><div class="mini-progress-track"><div class="mini-progress-fill" style="width:92%"></div></div><span style="font-size:0.72rem;color:var(--text-secondary)">92%</span></div>
+            </div>
+            <div class="project-item">
+              <div class="proj-icon"><i class="fa-solid fa-database"></i></div>
+              <div class="proj-info"><h6>Data Migration — Legacy Systems</h6><p class="small text-secondary">Infra Team &bull; Lead: Tom Odhiambo &bull; <span class="badge bg-danger bg-opacity-25 text-danger" style="font-size:0.7rem">At Risk</span></p></div>
+              <div class="proj-links">
+                <a href="#" class="btn-icon-link"><i class="fa-brands fa-github"></i></a>
+                <a href="#" class="btn-icon-link"><i class="fa-solid fa-file-lines"></i></a>
+              </div>
+              <div class="proj-progress"><div class="mini-progress-track"><div class="mini-progress-fill" style="width:35%;background:#e17055"></div></div><span style="font-size:0.72rem;color:var(--text-secondary)">35%</span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- KPI SECTION -->
+    <div id="kpis" class="dashboard-section">
+      <h2 class="section-title mb-4"><i class="fa-solid fa-chart-line me-2"></i> Performance Metrics</h2>
+      <div class="dashboard-grid">
+        <div class="grid-col-6">
+          <div class="card-glass">
+            <h3>Work Consistency (This Week)</h3>
+            <div class="kpi-chart-simulation">
+              <div class="bar" style="height:60%" data-label="Mon" data-val="60%"></div>
+              <div class="bar" style="height:85%" data-label="Tue" data-val="85%"></div>
+              <div class="bar" style="height:70%" data-label="Wed" data-val="70%"></div>
+              <div class="bar active" style="height:95%" data-label="Thu" data-val="95%"></div>
+              <div class="bar" style="height:40%" data-label="Fri" data-val="40%"></div>
+            </div>
+            <p class="small text-secondary mt-4">Monthly Average: <strong>92.4%</strong> &nbsp;&bull;&nbsp; Best Day: <strong>Thursday</strong></p>
+          </div>
+        </div>
+        <div class="grid-col-6">
+          <div class="card-glass">
+            <h3>Team Impact Score</h3>
+            <div class="impact-stats">
+              <div class="impact-item"><span class="impact-label">Tickets Resolved</span><div class="progress mt-1" style="height:8px;background:rgba(255,255,255,0.05)"><div class="progress-bar bg-primary" style="width:75%"></div></div><span class="impact-val">12 / 16</span></div>
+              <div class="impact-item mt-3"><span class="impact-label">Uptime Contribution</span><div class="progress mt-1" style="height:8px;background:rgba(255,255,255,0.05)"><div class="progress-bar bg-success" style="width:98%"></div></div><span class="impact-val">99.9%</span></div>
+              <div class="impact-item mt-3"><span class="impact-label">Code Review Participation</span><div class="progress mt-1" style="height:8px;background:rgba(255,255,255,0.05)"><div class="progress-bar" style="width:60%;background:#6c5ce7"></div></div><span class="impact-val">6 / 10</span></div>
+              <div class="impact-item mt-3"><span class="impact-label">Documentation Coverage</span><div class="progress mt-1" style="height:8px;background:rgba(255,255,255,0.05)"><div class="progress-bar bg-warning" style="width:80%"></div></div><span class="impact-val">80%</span></div>
+            </div>
+          </div>
+        </div>
+        <div class="grid-col-12">
+          <div class="card-glass">
+            <div class="card-header"><h3><i class="fa-solid fa-trophy"></i> Achievements & Badges</h3></div>
+            <div class="card-body">
+              <div class="badges-row">
+                <div class="badge-item"><i class="fa-solid fa-star" style="color:#ffc107"></i><span>Q4 Top Performer</span></div>
+                <div class="badge-item"><i class="fa-solid fa-shield" style="color:#6c5ce7"></i><span>Security Champion</span></div>
+                <div class="badge-item"><i class="fa-solid fa-fire" style="color:#e17055"></i><span>30-Day Streak</span></div>
+                <div class="badge-item badge-locked"><i class="fa-solid fa-lock" style="color:#636e72"></i><span>Team Lead</span></div>
+                <div class="badge-item badge-locked"><i class="fa-solid fa-lock" style="color:#636e72"></i><span>100 Tickets</span></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- TEAM DIRECTORY -->
+    <div id="team" class="dashboard-section">
+      <h2 class="section-title mb-4"><i class="fa-solid fa-people-group me-2"></i> Team Directory</h2>
+      <div class="mb-3"><input type="text" class="form-control bg-dark text-white border-secondary" id="teamSearch" placeholder="🔍  Search team members..." oninput="filterTeam()"></div>
+      <div class="team-grid" id="teamGrid">
+        {% if colleagues %}
+          {% for member in colleagues %}
+          <div class="team-card" data-name="{{ member.name|lower }}">
+            <div class="team-avatar" style="background:linear-gradient(135deg,#6c5ce7,#a29bfe)">
+              {{ member.name[:2]|upper }}
+            </div>
+            <h6>{{ member.name }}</h6>
+            <p>{{ member.role }}</p>
+            <div class="team-status {% if member.status == 'Active' %}online{% else %}offline{% endif %}"></div>
+            <button class="btn btn-sm btn-outline-primary mt-2" style="width:100%;font-size:0.75rem;" onclick="openChat('{{ member.id }}', '{{ member.name }}')">
+              <i class="fa-regular fa-comment-dots me-1"></i> Message
+            </button>
+          </div>
+          {% endfor %}
         {% else %}
-          <span class="badge-status badge-locked">
-            <i class="fa-solid fa-lock" style="font-size: 0.7rem;"></i> Locked
-          </span>
+          <p class="text-secondary small mt-3">No other team members found.</p>
         {% endif %}
       </div>
     </div>
 
-    <!-- Profile Info -->
-    <div class="profile-body">
-
-      <div class="info-row">
-        <span class="info-label"><i class="fa-solid fa-hashtag"></i> Employee Number</span>
-        <span class="info-value">{{ employee.employee_number }}</span>
+    <!-- ANNOUNCEMENTS SECTION -->
+    <div id="announcements" class="dashboard-section">
+      <h2 class="section-title mb-4"><i class="fa-solid fa-bullhorn me-2"></i> Notice Board</h2>
+      <div class="card-glass announcement-card">
+        <div class="card-body">
+          <div class="announcement-item">
+            <div class="ann-icon"><i class="fa-solid fa-wrench"></i></div>
+            <div class="ann-content"><h4>System Maintenance: Friday Night</h4><p>Internal VPN and Cloud services will be offline for 2 hours starting 10:00 PM UTC for security patching.</p><span class="ann-date">2026-03-28</span></div>
+          </div>
+          <div class="announcement-item">
+            <div class="ann-icon" style="color:#ffc107"><i class="fa-solid fa-certificate"></i></div>
+            <div class="ann-content"><h4>New Tech Africa IT Security Protocol</h4><p>All employees are now required to use single-sign-on (SSO) for third-party cloud applications. Contact IT for help.</p><span class="ann-date">2026-03-24</span></div>
+          </div>
+          <div class="announcement-item">
+            <div class="ann-icon" style="color:#00b894"><i class="fa-solid fa-trophy"></i></div>
+            <div class="ann-content"><h4>Q1 Performance Reviews Open</h4><p>Annual performance review submissions are now open. Please complete your self-assessment by April 5th, 2026.</p><span class="ann-date">2026-03-22</span></div>
+          </div>
+        </div>
       </div>
+    </div>
 
-      <div class="info-row">
-        <span class="info-label"><i class="fa-solid fa-envelope"></i> Email Address</span>
-        <span class="info-value">{{ employee.email }}</span>
+    <!-- QUICK TOOLS SECTION -->
+    <div id="tools" class="dashboard-section">
+      <h2 class="section-title mb-4"><i class="fa-solid fa-toolbox me-2"></i> Quick Tools</h2>
+      <div class="dashboard-grid">
+        <div class="grid-col-4"><a href="#" class="tool-card"><i class="fa-solid fa-file-arrow-up"></i><span>Submit Report</span></a></div>
+        <div class="grid-col-4"><a href="#" class="tool-card"><i class="fa-brands fa-github"></i><span>GitHub Repos</span></a></div>
+        <div class="grid-col-4"><a href="#" class="tool-card"><i class="fa-brands fa-jira"></i><span>Jira Board</span></a></div>
+        <div class="grid-col-4"><a href="#" class="tool-card"><i class="fa-solid fa-video"></i><span>Meet Room</span></a></div>
+        <div class="grid-col-4"><a href="#" class="tool-card"><i class="fa-solid fa-calendar-days"></i><span>Book Leave</span></a></div>
+        <div class="grid-col-4"><a href="#" class="tool-card"><i class="fa-solid fa-print"></i><span>Print Badge</span></a></div>
+        <div class="grid-col-4"><a href="#" class="tool-card"><i class="fa-solid fa-headset"></i><span>IT Helpdesk</span></a></div>
+        <div class="grid-col-4"><a href="#" class="tool-card"><i class="fa-solid fa-graduation-cap"></i><span>Learning Hub</span></a></div>
+        <div class="grid-col-4"><a href="#" class="tool-card"><i class="fa-solid fa-file-contract"></i><span>HR Portal</span></a></div>
       </div>
+    </div>
 
-      <div class="info-row">
-        <span class="info-label"><i class="fa-solid fa-user"></i> Username</span>
-        <span class="info-value">{{ employee.username }}</span>
+    <!-- HELP SECTION -->
+    <div id="help" class="dashboard-section">
+      <h2 class="section-title mb-4"><i class="fa-solid fa-circle-question me-2"></i> Help & Support</h2>
+      <div class="dashboard-grid">
+        <div class="grid-col-8">
+          <div class="card-glass">
+            <h3>Frequently Asked Questions</h3>
+            <div class="faq-list">
+              <details class="faq-item"><summary>How do I reset my Tech Africa IT hub password?</summary><p class="mt-2 text-secondary">Use the Security Actions section in this portal or the Forgot Password link on the login page.</p></details>
+              <details class="faq-item mt-3"><summary>Who do I contact for VPN access issues?</summary><p class="mt-2 text-secondary">Contact IT Support at <a href="mailto:support@techafrica-it.com" style="color:var(--accent)">support@techafrica-it.com</a> or submit an internal ticket.</p></details>
+              <details class="faq-item mt-3"><summary>How do I request access to a new project?</summary><p class="mt-2 text-secondary">Navigate to the Projects section and click "Request Access", or raise a ticket in the Help Center below.</p></details>
+              <details class="faq-item mt-3"><summary>What should I do if I suspect a security breach?</summary><p class="mt-2 text-secondary">Immediately use "Terminate All Sessions" in Security Actions, then contact the Security team or Admin.</p></details>
+            </div>
+          </div>
+        </div>
+        <div class="grid-col-4">
+          <div class="card-glass">
+            <h3>Support Ticket</h3>
+            <div class="mb-3"><label class="form-label small">Issue Type</label>
+              <select class="form-select bg-dark text-white border-secondary small" id="ticketType">
+                <option>Technical Issue</option><option>Access Request</option><option>HR Inquiry</option><option>General Question</option>
+              </select>
+            </div>
+            <div class="mb-3"><label class="form-label small">Description</label><textarea class="form-control bg-dark text-white border-secondary small" rows="3" id="ticketDesc" placeholder="Describe your issue..."></textarea></div>
+            <button class="btn btn-primary w-100 btn-sm" onclick="submitTicket()">Create Ticket</button>
+            <p class="small text-secondary mt-2 text-center">Est. response: &lt; 4 hours</p>
+            <div id="ticketSuccess" class="alert alert-success small mt-2 d-none"><i class="fa-solid fa-circle-check me-1"></i> Ticket submitted!</div>
+          </div>
+        </div>
       </div>
+    </div>
 
-      <div class="info-row">
-        <span class="info-label"><i class="fa-solid fa-shield-halved"></i> Account Status</span>
-        <span class="info-value">
-          {% if employee.status == "Active" %}
-            <span class="badge-status badge-active">Active</span>
-          {% else %}
-            <span class="badge-status badge-locked">Locked</span>
-          {% endif %}
-        </span>
+    <!-- SECURITY SECTION -->
+    <div id="security" class="dashboard-section">
+      <h2 class="section-title mb-4"><i class="fa-solid fa-user-shield me-2"></i> Security Actions</h2>
+      <div class="dashboard-grid">
+        <div class="grid-col-8">
+          <div class="card-glass action-card">
+            <div class="card-header"><h3><i class="fa-solid fa-lock"></i> Account Protection</h3></div>
+            <div class="card-body">
+              <div class="action-buttons">
+                <button class="btn-action" data-bs-toggle="modal" data-bs-target="#changePasswordModal">
+                  <i class="fa-solid fa-key"></i> Change Access Password
+                </button>
+                <button class="btn-action" data-bs-toggle="modal" data-bs-target="#emergencyEmailModal">
+                  <i class="fa-solid fa-envelope-open-text"></i> Set Emergency Recovery Email
+                </button>
+                <form action="/employee/terminate-sessions" method="POST" onsubmit="return confirm('⚠️ This will log you out of all devices. Proceed?');">
+                  <button type="submit" class="btn-action-outline text-danger border-danger w-100">
+                    <i class="fa-solid fa-power-off"></i> Terminate All Active Sessions
+                  </button>
+                </form>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="grid-col-4">
+          <div class="card-glass">
+            <div class="card-header"><h3><i class="fa-solid fa-clock-rotate-left"></i> Recent Activity</h3></div>
+            <div class="card-body">
+              <ul class="activity-log">
+                <li><i class="fa-solid fa-right-to-bracket" style="color:#00b894"></i> Login from <strong>{{ employee.last_ip_address or 'N/A' }}</strong><span class="text-secondary small d-block">{{ employee.last_login or 'Recently' }}</span></li>
+                <li><i class="fa-solid fa-key" style="color:#6c5ce7"></i> Password last changed<span class="text-secondary small d-block">30 days ago</span></li>
+                <li><i class="fa-solid fa-triangle-exclamation" style="color:#ffc107"></i> Failed attempts: <strong class="{% if employee.failed_attempts >= 2 %}text-danger{% endif %}">{{ employee.failed_attempts }}</strong><span class="text-secondary small d-block">All time</span></li>
+              </ul>
+            </div>
+          </div>
+        </div>
       </div>
+    </div>
 
-      <div class="info-row">
-        <span class="info-label"><i class="fa-solid fa-triangle-exclamation"></i> Failed Attempts</span>
-        <span class="info-value" style="{% if employee.failed_attempts >= 2 %}color: var(--warning);{% endif %}">
-          {{ employee.failed_attempts }}
-          {% if employee.failed_attempts >= 2 %}
-            <span style="font-size: 0.78rem; color: var(--warning); margin-left: 6px;">
-              ({{ 3 - employee.failed_attempts }} attempt(s) left)
-            </span>
-          {% endif %}
-        </span>
+  </main>
+</div>
+
+<!-- CHANGE PASSWORD MODAL -->
+<div class="modal fade" id="changePasswordModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content bg-dark text-white border-secondary">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title"><i class="fa-solid fa-key me-2 text-primary"></i> Change Access Password</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
       </div>
-
-      <div class="info-row">
-        <span class="info-label"><i class="fa-solid fa-clock"></i> Last Login</span>
-        <span class="info-value">
-          {% if employee.last_login %}
-            {{ employee.last_login.strftime('%Y-%m-%d %H:%M:%S') }} UTC
-          {% else %}
-            <span style="color: var(--text-secondary);">N/A</span>
-          {% endif %}
-        </span>
-      </div>
-
-      <div class="info-row">
-        <span class="info-label"><i class="fa-solid fa-network-wired"></i> Last Known IP</span>
-        <span class="info-value">
-          {% if employee.last_ip_address %}
-            {{ employee.last_ip_address }}
-          {% else %}
-            <span style="color: var(--text-secondary);">N/A</span>
-          {% endif %}
-        </span>
-      </div>
-
+      <form action="/employee/change-password" method="POST">
+        <div class="modal-body">
+          <div class="mb-3"><label class="form-label">Current Password</label><input type="password" name="current_password" class="form-control bg-dark text-white border-secondary" required></div>
+          <hr class="border-secondary">
+          <div class="mb-3"><label class="form-label">New Password</label><input type="password" name="new_password" class="form-control bg-dark text-white border-secondary" required minlength="8"><div class="form-text text-secondary small">Min 8 chars, include a number and special character.</div></div>
+          <div class="mb-3"><label class="form-label">Confirm New Password</label><input type="password" name="confirm_password" class="form-control bg-dark text-white border-secondary" required></div>
+        </div>
+        <div class="modal-footer border-secondary">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary px-4">Update Password</button>
+        </div>
+      </form>
     </div>
   </div>
-
-  <!-- Security Notice -->
-  {% if employee.status == "Locked" %}
-  <div class="alert-custom alert-danger mt-4" style="max-width: 640px; margin: 20px auto 0;">
-    <i class="fa-solid fa-lock"></i>
-    Your account is currently locked. Please contact the administrator to regain access.
-  </div>
-  {% endif %}
-
 </div>
+
+<!-- SYSTEM TOAST -->
+<div class="custom-toast" id="systemToast">
+  <i class="fa-solid fa-circle-info text-primary" id="toastIcon"></i>
+  <span id="toastMsg">Notification</span>
+</div>
+
+<!-- FOOTER JS / CSS -->
+<!-- CHAT MODAL -->
+<div class="modal fade" id="chatModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content bg-dark text-white border-secondary">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title"><i class="fa-regular fa-comments me-2 text-primary"></i> <span id="chatPeerName">Chat</span></h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" onclick="closeChat()"></button>
+      </div>
+      <div class="modal-body p-0">
+        <div class="chat-window">
+          <div class="chat-messages" id="chatMessages">
+            <div class="text-center text-secondary small py-4"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading messages...</div>
+          </div>
+          <div class="chat-input-area">
+            <input type="text" id="chatInput" placeholder="Type a message..." onkeypress="if(event.key==='Enter') sendChatMessage()">
+            <button class="btn-send" onclick="sendChatMessage()"><i class="fa-solid fa-paper-plane"></i></button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- EMERGENCY EMAIL MODAL -->
+<div class="modal fade" id="emergencyEmailModal" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content bg-dark text-white border-secondary">
+      <div class="modal-header border-secondary">
+        <h5 class="modal-title"><i class="fa-solid fa-envelope-circle-check me-2 text-primary"></i> Recovery Email</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+      <form action="/employee/update-emergency-email" method="POST">
+        <div class="modal-body">
+          <p class="text-secondary small mb-3">Set a personal email to receive password reset codes if you lose access.</p>
+          <div class="mb-3"><label class="form-label">Emergency Email Address</label><input type="email" name="emergency_email" class="form-control bg-dark text-white border-secondary" placeholder="personal@example.com" value="{{ employee.emergency_email or '' }}" required></div>
+        </div>
+        <div class="modal-footer border-secondary">
+          <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-primary px-4">Save Email</button>
+        </div>
+      </form>
+    </div>
+  </div>
+</div>
+
+<style>
+/* ── Section switching ── */
+.dashboard-section { display:none; animation: fadeIn .4s ease; }
+.section-active { display:block; }
+@keyframes fadeIn { from{opacity:0;transform:translateY(10px)} to{opacity:1;transform:translateY(0)} }
+
+/* ── Sidebar ── */
+.dashboard-sidebar {
+  width:var(--sidebar-width); background:#111422;
+  border-right:1px solid rgba(255,255,255,.05);
+  display:flex; flex-direction:column;
+  position:sticky; top:0; height:100vh;
+}
+.sidebar-header { padding:24px; border-bottom:1px solid rgba(255,255,255,.05); }
+.sidebar-logo { display:flex; align-items:center; gap:12px; font-size:1.1rem; font-weight:700; color:var(--accent); }
+.sidebar-nav { flex:1; padding:16px; display:flex; flex-direction:column; gap:4px; overflow-y:auto; }
+.nav-item { display:flex; align-items:center; gap:14px; padding:11px 16px; color:var(--text-secondary); text-decoration:none; border-radius:8px; transition:all .2s; font-size:.93rem; }
+.nav-item:hover { background:rgba(255,255,255,.05); color:var(--text-primary); }
+.nav-item.active { background:var(--accent-gradient); color:white; box-shadow:0 4px 15px rgba(108,92,231,.3); }
+.nav-item i { font-size:1.05rem; width:20px; text-align:center; }
+.nav-spacer { flex:1; }
+.logout-nav { color:var(--danger); }
+.logout-nav:hover { background:rgba(231,76,123,.1); color:var(--danger); }
+
+/* ── Header ── */
+.dashboard-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:28px; }
+.header-title { font-size:1.75rem; font-weight:800; margin-bottom:4px; }
+.header-subtitle { color:var(--text-secondary); font-size:.9rem; }
+.highlight { color:var(--accent); }
+.status-badge { padding:7px 14px; border-radius:30px; font-size:.82rem; font-weight:700; display:flex; align-items:center; gap:7px; background:rgba(0,184,148,.1); color:#00b894; }
+
+/* ── Grid ── */
+.dashboard-grid { display:grid; grid-template-columns:repeat(12,1fr); gap:22px; align-items:start; }
+.grid-col-12{grid-column:span 12} .grid-col-8{grid-column:span 8} .grid-col-6{grid-column:span 6} .grid-col-4{grid-column:span 4} .grid-col-3{grid-column:span 3}
+
+/* ── Cards ── */
+.card-glass { background:var(--bg-card); border:1px solid rgba(255,255,255,.06); border-radius:16px; padding:22px; }
+.card-header h3 { font-size:1rem; font-weight:700; margin-bottom:18px; display:flex; align-items:center; gap:10px; }
+.card-header i { color:var(--accent); }
+.card-footer-info { font-size:.75rem; color:var(--text-secondary); text-align:center; margin-top:12px; }
+
+/* ── Identity ── */
+.identity-stats { display:grid; grid-template-columns:repeat(auto-fit,minmax(130px,1fr)); gap:18px; margin-bottom:18px; }
+.stat-label { display:block; font-size:.72rem; text-transform:uppercase; letter-spacing:1px; color:var(--text-secondary); margin-bottom:5px; }
+.stat-value { display:block; font-size:1.05rem; font-weight:700; }
+.badge-role { color:var(--accent); font-weight:800; }
+.last-login { font-size:.8rem; color:var(--text-secondary); padding-top:14px; border-top:1px solid rgba(255,255,255,.05); }
+
+/* ── Mini stats ── */
+.mini-stat { display:flex; align-items:center; gap:16px; padding:18px 20px; }
+.mini-stat-val { font-size:1.6rem; font-weight:800; line-height:1; }
+.mini-stat-lbl { font-size:.75rem; color:var(--text-secondary); margin-top:3px; }
+
+/* ── Circular chart ── */
+.circular-progress-box { width:100px; margin:0 auto; }
+.circular-chart { display:block; margin:8px auto; max-width:100%; max-height:250px; }
+.circle-bg { fill:none; stroke:rgba(255,255,255,.05); stroke-width:2.8; }
+.circle { fill:none; stroke-width:2.8; stroke-linecap:round; animation:progress 1s ease-out forwards; }
+@keyframes progress { 0%{stroke-dasharray:0 100} }
+.circular-chart.accent .circle { stroke:var(--accent); }
+.percentage { fill:white; font-size:.5rem; text-anchor:middle; font-weight:700; }
+
+/* ── Tasks ── */
+.task-list { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:14px; }
+.task-item { display:flex; align-items:center; gap:14px; padding:14px; background:rgba(255,255,255,.02); border-radius:10px; transition:background .2s; }
+.task-item:hover { background:rgba(255,255,255,.04); }
+.task-check { width:26px; height:26px; border-radius:50%; border:2px solid rgba(255,255,255,.2); background:transparent; color:transparent; cursor:pointer; flex-shrink:0; transition:all .2s; display:flex; align-items:center; justify-content:center; font-size:.8rem; }
+.task-check.done { background:var(--accent); border-color:var(--accent); color:white; }
+.task-title { display:block; font-weight:600; font-size:.93rem; }
+.task-title.done-text { text-decoration:line-through; opacity:.5; }
+.task-meta { font-size:.73rem; color:var(--text-secondary); }
+.task-priority { margin-left:auto; font-size:.68rem; font-weight:700; padding:3px 9px; border-radius:6px; flex-shrink:0; }
+.p-high { background:rgba(225,112,85,.15); color:#e17055; }
+.p-med  { background:rgba(255,193,7,.15);  color:#ffc107; }
+.p-low  { background:rgba(0,184,148,.15);  color:#00b894; }
+
+/* ── Projects ── */
+.project-list { display:flex; flex-direction:column; gap:14px; }
+.project-item { display:flex; align-items:center; gap:14px; padding:14px; background:rgba(255,255,255,.02); border-radius:12px; }
+.proj-icon { font-size:1.4rem; color:var(--accent); opacity:.8; flex-shrink:0; }
+.proj-info h6 { margin:0; font-weight:700; }
+.proj-info p { margin:0; }
+.proj-links { margin-left:auto; display:flex; gap:10px; }
+.btn-icon-link { color:var(--text-secondary); font-size:1.05rem; transition:.2s; }
+.btn-icon-link:hover { color:var(--accent); }
+.proj-progress { display:flex; align-items:center; gap:8px; min-width:100px; }
+.mini-progress-track { flex:1; height:5px; background:rgba(255,255,255,.08); border-radius:3px; overflow:hidden; }
+.mini-progress-fill { height:100%; background:var(--accent); border-radius:3px; }
+
+/* ── KPI chart ── */
+.kpi-chart-simulation { display:flex; align-items:flex-end; justify-content:space-between; height:120px; gap:10px; padding-top:20px; position:relative; }
+.bar { flex:1; background:rgba(108,92,231,.2); border-radius:4px 4px 0 0; position:relative; cursor:pointer; transition:background .2s; }
+.bar.active, .bar:hover { background:var(--accent); }
+.bar::after { content:attr(data-label); position:absolute; bottom:-22px; left:50%; transform:translateX(-50%); font-size:.65rem; color:var(--text-secondary); white-space:nowrap; }
+
+/* ── Impact ── */
+.impact-val { font-size:.82rem; font-weight:700; color:var(--text-primary); }
+
+/* ── Badges ── */
+.badges-row { display:flex; gap:16px; flex-wrap:wrap; }
+.badge-item { display:flex; flex-direction:column; align-items:center; gap:8px; padding:16px 20px; background:rgba(255,255,255,.03); border-radius:12px; font-size:.75rem; color:var(--text-secondary); text-align:center; min-width:80px; }
+.badge-item i { font-size:1.6rem; }
+.badge-item.badge-locked { opacity:.4; filter:grayscale(1); }
+
+/* ── Team ── */
+.team-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(160px,1fr)); gap:16px; }
+.team-card { background:var(--bg-card); border:1px solid rgba(255,255,255,.06); border-radius:14px; padding:20px; text-align:center; position:relative; transition:transform .2s; }
+.team-card:hover { transform:translateY(-3px); }
+.team-avatar { width:52px; height:52px; border-radius:50%; margin:0 auto 10px; display:flex; align-items:center; justify-content:center; font-weight:800; font-size:1rem; color:white; }
+.team-card h6 { margin:0; font-size:.88rem; font-weight:700; }
+.team-card p { margin:0; font-size:.73rem; color:var(--text-secondary); }
+.team-status { width:10px; height:10px; border-radius:50%; position:absolute; top:14px; right:14px; }
+.team-status.online { background:#00b894; box-shadow:0 0 6px #00b894; }
+.team-status.away   { background:#ffc107; }
+.team-status.offline{ background:#636e72; }
+
+/* ── Announcements ── */
+.announcement-item { display:flex; gap:18px; margin-bottom:20px; padding-bottom:20px; border-bottom:1px solid rgba(255,255,255,.04); }
+.announcement-item:last-child { border:none; margin:0; padding:0; }
+.ann-icon { font-size:1.3rem; color:var(--accent); flex-shrink:0; margin-top:3px; }
+.ann-content h4 { font-size:.95rem; margin-bottom:5px; }
+.ann-content p { font-size:.85rem; color:var(--text-secondary); line-height:1.5; margin:0; }
+.ann-date { font-size:.7rem; color:var(--text-secondary); margin-top:5px; display:inline-block; }
+
+/* ── Quick Tools ── */
+.tool-card { display:flex; flex-direction:column; align-items:center; gap:12px; padding:22px 16px; background:var(--bg-card); border:1px solid rgba(255,255,255,.06); border-radius:14px; color:var(--text-secondary); text-decoration:none; transition:all .2s; font-size:.85rem; text-align:center; }
+.tool-card i { font-size:1.6rem; color:var(--accent); }
+.tool-card:hover { background:rgba(108,92,231,.1); color:var(--text-primary); transform:translateY(-3px); border-color:rgba(108,92,231,.3); }
+
+/* ── Security / Activity ── */
+.activity-log { list-style:none; padding:0; margin:0; display:flex; flex-direction:column; gap:14px; }
+.activity-log li { display:flex; flex-direction:column; gap:3px; padding:12px; background:rgba(255,255,255,.02); border-radius:10px; font-size:.85rem; }
+.activity-log li i { margin-right:8px; }
+.action-buttons { display:flex; flex-direction:column; gap:12px; }
+.btn-action,.btn-action-outline { width:100%; padding:13px; border-radius:10px; font-size:.9rem; font-weight:600; display:flex; align-items:center; justify-content:center; gap:10px; cursor:pointer; transition:all .2s; }
+.btn-action { background:var(--accent); color:white; border:none; }
+.btn-action:hover { background:#5644c1; }
+.btn-action-outline { background:transparent; border:1px solid rgba(255,255,255,.1); color:var(--text-primary); }
+.btn-action-outline:hover { background:rgba(255,255,255,.05); }
+
+/* ── Profile ── */
+.profile-avatar-row { display:flex; align-items:center; gap:16px; margin-bottom:4px; }
+.profile-avatar { width:60px; height:60px; border-radius:50%; background:var(--accent-gradient); display:flex; align-items:center; justify-content:center; font-weight:800; font-size:1.4rem; color:white; flex-shrink:0; }
+.profile-table { width:100%; font-size:.88rem; }
+.profile-table td { padding:8px 4px; border-bottom:1px solid rgba(255,255,255,.04); }
+.profile-table .stat-label { width:38%; }
+.security-meter-list { display:flex; flex-direction:column; gap:14px; }
+.sec-meter-item { display:flex; align-items:center; gap:12px; font-size:.85rem; }
+.sec-meter-item > span:first-child { min-width:140px; color:var(--text-secondary); font-size:.82rem; }
+.sec-bar-wrap { flex:1; height:7px; background:rgba(255,255,255,.07); border-radius:4px; overflow:hidden; }
+.sec-bar { height:100%; border-radius:4px; transition:width 1s ease; }
+.sec-val { min-width:60px; text-align:right; font-size:.78rem; font-weight:700; }
+
+/* ── Modals ── */
+.modal-content { background:#111422 !important; border-radius:20px !important; box-shadow:0 10px 40px rgba(0,0,0,.5); }
+.modal-header,.modal-footer { border-color:rgba(255,255,255,.1) !important; }
+.form-control:focus,.form-select:focus { background:#1a1e2e !important; border-color:var(--accent) !important; box-shadow:0 0 10px rgba(108,92,231,.2); color:white !important; }
+
+/* ── Chat Modal ── */
+.chat-window { display:flex; flex-direction:column; height:350px; background:#0b0d17; border-radius:0 0 20px 20px; overflow:hidden; }
+.chat-messages { flex:1; overflow-y:auto; padding:15px; display:flex; flex-direction:column; gap:10px; }
+.chat-msg { max-width:85%; padding:10px 14px; border-radius:14px; font-size:0.88rem; line-height:1.4; position:relative; clear:both; word-wrap:break-word; }
+.chat-msg.sent { align-self:flex-end; background:var(--accent); color:white; border-bottom-right-radius:2px; }
+.chat-msg.received { align-self:flex-start; background:rgba(255,255,255,0.08); color:var(--text-primary); border-bottom-left-radius:2px; }
+.chat-time { display:block; font-size:0.65rem; opacity:0.7; margin-top:5px; text-align:right; }
+.chat-input-area { padding:12px; background:rgba(255,255,255,0.03); border-top:1px solid rgba(255,255,255,0.05); display:flex; gap:10px; }
+.chat-input-area input { flex:1; background:rgba(0,0,0,0.3) !important; border:1px solid rgba(255,255,255,0.1) !important; color:white; border-radius:20px; padding:8px 15px; font-size:0.85rem; outline:none; }
+.chat-input-area input:focus { border-color:var(--accent) !important; box-shadow:0 0 0 2px rgba(108,92,231,0.2) !important; }
+.btn-send { background:var(--accent); color:white; border:none; border-radius:50%; width:36px; height:36px; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:0.9rem; transition:transform 0.2s;flex-shrink:0; }
+.btn-send:hover { transform:scale(1.1); background:#5644c1; }
+
+/* ── Toast Notifications ── */
+.custom-toast { position:fixed; bottom:30px; right:30px; background:#111422; border:1px solid rgba(255,255,255,.1); border-left:4px solid var(--accent); color:white; padding:15px 20px; border-radius:8px; box-shadow:0 10px 30px rgba(0,0,0,.5); display:flex; align-items:center; gap:12px; z-index:9999; transform:translateX(120%); transition:transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); font-size:0.9rem; }
+.custom-toast.show { transform:translateX(0); }
+
+/* ── Responsive ── */
+@media(max-width:1024px){.dashboard-sidebar{width:var(--sidebar-collapsed)}.dashboard-sidebar span{display:none}.sidebar-logo span{display:none}.sidebar-nav{align-items:center}.nav-item{padding:11px;justify-content:center}}
+@media(max-width:768px){.dashboard-sidebar{display:none}.grid-col-12,.grid-col-8,.grid-col-6,.grid-col-4,.grid-col-3{grid-column:span 12}}
+</style>
+
+<script>
+// ── Live Clock ──
+function updateClock(){const n=new Date();document.getElementById('liveClock').textContent=n.toLocaleTimeString();}
+updateClock(); setInterval(updateClock,1000);
+
+// ── Section switching ──
+document.addEventListener('DOMContentLoaded',function(){
+  const navItems=document.querySelectorAll('.nav-item[data-section]');
+  const sections=document.querySelectorAll('.dashboard-section');
+  navItems.forEach(item=>item.addEventListener('click',function(e){
+    if(this.getAttribute('href').startsWith('#')){
+      e.preventDefault();
+      const id=this.getAttribute('data-section');
+      navItems.forEach(i=>i.classList.remove('active'));
+      this.classList.add('active');
+      sections.forEach(s=>{s.classList.remove('section-active');if(s.id===id)s.classList.add('section-active');});
+      document.querySelector('.main-content').scrollTop=0;
+    }
+  }));
+  const hash=window.location.hash.substring(1);
+  if(hash){const t=document.querySelector(`.nav-item[data-section="${hash}"]`);if(t)t.click();}
+  
+  // Attach Toast UI to Tools and Projects
+  document.querySelectorAll('.tool-card').forEach(card => {
+    card.addEventListener('click', e => {
+      e.preventDefault();
+      const name = card.querySelector('span').innerText;
+      showToast(`Redirecting to ${name} via SSO...`, 'fa-solid fa-circle-notch fa-spin text-primary', 2000);
+    });
+  });
+
+  document.querySelectorAll('.btn-icon-link').forEach(link => {
+    link.addEventListener('click', e => {
+      e.preventDefault();
+      showToast('Opening external resource...', 'fa-solid fa-arrow-up-right-from-square text-secondary', 1500);
+    });
+  });
+
+  // Attach to "Request Access" button
+  const reqBtn = Array.from(document.querySelectorAll('.btn-outline-primary')).find(b => b.innerText.includes('Request Access'));
+  if (reqBtn) {
+    reqBtn.addEventListener('click', e => {
+      e.preventDefault();
+      showToast('Access request sent to Project Lead!', 'fa-solid fa-circle-check text-success', 3000);
+    });
+  }
+});
+
+// ── Toast System ──
+function showToast(msg, iconClass="fa-solid fa-circle-info text-primary", duration=3000) {
+  const toast = document.getElementById('systemToast');
+  document.getElementById('toastMsg').innerText = msg;
+  document.getElementById('toastIcon').className = iconClass;
+  toast.classList.add('show');
+  setTimeout(()=>toast.classList.remove('show'), duration);
+}
+
+// ── Task toggle ──
+function toggleTask(btn){
+  btn.classList.toggle('done');
+  const title=btn.nextElementSibling.querySelector('.task-title');
+  title.classList.toggle('done-text');
+}
+
+// ── Add task ──
+function addTask(){
+  const text=prompt('Enter new task:');
+  if(!text||!text.trim())return;
+  const li=document.createElement('li');
+  li.className='task-item';
+  li.innerHTML=`<button class="task-check" onclick="toggleTask(this)"><i class="fa-solid fa-check"></i></button><div class="task-text"><span class="task-title">${text.trim()}</span><span class="task-meta">Added just now</span></div><span class="task-priority p-med">Medium</span>`;
+  document.getElementById('taskList').appendChild(li);
+}
+
+// ── Team search ──
+function filterTeam(){
+  const q=document.getElementById('teamSearch').value.toLowerCase();
+  document.querySelectorAll('.team-card').forEach(c=>{
+    c.style.display=c.dataset.name.includes(q)?'':'none';
+  });
+}
+
+// ── Support ticket ──
+function submitTicket(){
+  const desc=document.getElementById('ticketDesc').value.trim();
+  if(!desc){alert('Please describe your issue.');return;}
+  document.getElementById('ticketSuccess').classList.remove('d-none');
+  document.getElementById('ticketDesc').value='';
+  setTimeout(()=>document.getElementById('ticketSuccess').classList.add('d-none'),4000);
+}
+
+// ── Chat Functionality ──
+let currentChatUserId = null;
+let chatPollInterval = null;
+
+function openChat(userId, userName) {
+  currentChatUserId = userId;
+  document.getElementById('chatPeerName').innerText = userName;
+  document.getElementById('chatMessages').innerHTML = '<div class="text-center text-secondary small py-4"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading...</div>';
+  
+  const modalEl = document.getElementById('chatModal');
+  const modal = bootstrap.Modal.getInstance(modalEl) || new bootstrap.Modal(modalEl);
+  modal.show();
+  
+  loadMessages();
+  if (chatPollInterval) clearInterval(chatPollInterval);
+  chatPollInterval = setInterval(loadMessages, 5000);
+}
+
+function closeChat() {
+  if (chatPollInterval) clearInterval(chatPollInterval);
+  currentChatUserId = null;
+}
+
+document.addEventListener('DOMContentLoaded', function(){
+  const modalEl = document.getElementById('chatModal');
+  if(modalEl) {
+    modalEl.addEventListener('hidden.bs.modal', function () { closeChat(); });
+  }
+});
+
+function loadMessages() {
+  if (!currentChatUserId) return;
+  fetch(`/employee/api/messages/${currentChatUserId}`)
+    .then(r => r.json())
+    .then(data => {
+      if (data.success) {
+        const container = document.getElementById('chatMessages');
+        // Save current scroll position to check if we are at bottom
+        const wasAtBottom = (container.scrollHeight - container.scrollTop <= container.clientHeight + 20);
+        
+        container.innerHTML = '';
+        if (data.messages.length === 0) {
+          container.innerHTML = '<div class="text-center text-secondary small py-4">No messages yet. Start the conversation!</div>';
+          return;
+        }
+        data.messages.forEach(msg => {
+          const isSent = msg.sender_id === '{{ employee.id }}';
+          const timeStr = new Date(msg.created_at).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+          container.innerHTML += `<div class="chat-msg ${isSent ? 'sent' : 'received'}">
+            ${msg.message_text}
+            <span class="chat-time">${timeStr}</span>
+          </div>`;
+        });
+        
+        // Scroll to bottom only if we were already at bottom
+        if (wasAtBottom || data.messages.length > 0) {
+           container.scrollTop = container.scrollHeight;
+        }
+      }
+    }).catch(e => console.error(e));
+}
+
+function sendChatMessage() {
+  const input = document.getElementById('chatInput');
+  const text = input.value.trim();
+  if (!text || !currentChatUserId) return;
+  
+  // Optimistic UI update
+  const container = document.getElementById('chatMessages');
+  if(container.querySelector('.fa-circle-notch')) container.innerHTML = '';
+  const tempId = Date.now();
+  const timeStr = new Date().toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'});
+  container.innerHTML += `<div class="chat-msg sent" style="opacity:0.6" id="msg-${tempId}">
+    ${text} <span class="chat-time">${timeStr}</span>
+  </div>`;
+  container.scrollTop = container.scrollHeight;
+  input.value = '';
+
+  fetch(`/employee/api/messages/${currentChatUserId}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message_text: text })
+  }).then(r => r.json()).then(data => {
+    if (data.success) {
+      document.getElementById(`msg-${tempId}`).style.opacity = '1';
+    } else {
+      document.getElementById(`msg-${tempId}`).innerHTML = `<i class="fa-solid fa-triangle-exclamation text-warning"></i> Failed to send`;
+    }
+  }).catch(e => {
+    document.getElementById(`msg-${tempId}`).innerHTML = `<i class="fa-solid fa-triangle-exclamation text-warning"></i> Failed to send`;
+  });
+}
+</script>
 {% endblock %}

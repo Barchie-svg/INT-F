@@ -20,7 +20,7 @@ def send_alert(message: str, subject: str = None, to_email: str = None) -> bool:
     """
     sender_email, admin_email, brevo_key = _get_config()
     recipient     = to_email or admin_email
-    email_subject = subject or "🚨 Security Alert — Employee Intrusion Detection System"
+    email_subject = subject or "🚨 Security Alert — Tech Africa IT Secure Access System"
 
     if not brevo_key:
         print("[EMAIL ERROR] BREVO_API_KEY is not set. Cannot send email.")
@@ -33,7 +33,7 @@ def send_alert(message: str, subject: str = None, to_email: str = None) -> bool:
     now  = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     body = (
         f"{'='*50}\n"
-        f"  EMPLOYEE INTRUSION SYSTEM — {now}\n"
+        f"  TECH AFRICA IT SECURE ACCESS — {now}\n"
         f"{'='*50}\n\n"
         f"{message}\n\n"
         f"Admin Dashboard:\n"
@@ -49,7 +49,7 @@ def send_alert(message: str, subject: str = None, to_email: str = None) -> bool:
                 "content-type": "application/json"
             },
             json={
-                "sender":      {"name": "Employee IDS", "email": sender_email},
+                "sender":      {"name": "Tech Africa IT Support", "email": sender_email},
                 "to":          [{"email": recipient}],
                 "subject":     email_subject,
                 "textContent": body

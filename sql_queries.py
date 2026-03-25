@@ -157,6 +157,13 @@ def update_employee_password(user_id: str, hashed_password: str):
     supabase.table("employees").update({"password": hashed_password}).eq("id", user_id).execute()
 
 
+def update_employee_emergency_email(user_id: str, email: str):
+    """
+    Update an employee's emergency/recovery email.
+    """
+    supabase.table("employees").update({"emergency_email": email}).eq("id", user_id).execute()
+
+
 def delete_employee(user_id: str):
     supabase.table("employees").delete().eq("id", user_id).execute()
 
@@ -325,3 +332,91 @@ def update_system_settings(admin_email: str, sender_email: str, sender_password:
     if sender_email: update_setting("sender_email", sender_email)
     if sender_password is not None: update_setting("sender_password", sender_password)
 
+
+# --- New Tasks Functions ---
+from database import supabase
+from datetime import datetime, timezone
+
+def get_employee_tasks(user_id):
+    """Fetch all tasks for a given employee, ordered by incomplete first then creation date."""
+    try:
+        res = supabase.table("employee_tasks").select("*").eq("user_id", user_id).order("is_completed").order("created_at", desc=True).execute()
+        return res.data
+    except Exception as e:
+        print(f"Error fetching tasks: {e}")
+        return []
+
+def add_employee_task(user_id, title, priority="Medium"):
+    try:
+        data = {
+            "user_id": user_id,
+            "title": title,
+            "priority": priority,
+            "is_completed": False
+        }
+        res = supabase.table("employee_tasks").insert(data).execute()
+        return res.data
+    except Exception as e:
+        print(f"Error adding task: {e}")
+        return None
+
+def update_task_status(task_id, user_id, is_completed):
+    try:
+        res = supabase.table("employee_tasks").update({"is_completed": is_completed}).eq("id", task_id).eq("user_id", user_id).execute()
+
+        return res.data
+    except Exception as e:
+        print(f"Error updating task: {e}")
+        return None
+
+def delete_employee_task(task_id, user_id):
+    try:
+        res = supabase.table("employee_tasks").delete().eq("id", task_id).eq("user_id", user_id).execute()
+        return res.data
+    except Exception as e:
+        print(f"Error deleting task: {e}")
+        return None
+
+# ─────────────────────────────────────────────
+#  Internal Messaging Functions
+# ─────────────────────────────────────────────
+
+def get_employee_messages(user1_id: str, user2_id: str):
+    """Fetch chat history between two users, ordered by time."""
+    try:
+        from database import supabase
+        res = supabase.table("employee_messages").select(
+            "id, sender_id, receiver_id, message_text, is_read, created_at, sender:profiles!sender_id(name, username), receiver:profiles!receiver_id(name, username)"
+        ).or_(
+            f"and(sender_id.eq.{user1_id},receiver_id.eq.{user2_id}),and(sender_id.eq.{user2_id},receiver_id.eq.{user1_id})"
+        ).order("created_at").execute()
+        return res.data or []
+    except Exception as e:
+        print(f"Error fetching messages: {e}")
+        return []
+
+
+def send_employee_message(sender_id: str, receiver_id: str, message_text: str):
+    """Send a new message to another employee."""
+    try:
+        from database import supabase
+        data = {
+            "sender_id": sender_id,
+            "receiver_id": receiver_id,
+            "message_text": message_text.strip(),
+            "is_read": False
+        }
+        res = supabase.table("employee_messages").insert(data).execute()
+        return res.data[0] if res.data else None
+    except Exception as e:
+        print(f"Error sending message: {e}")
+        return None
+
+
+def mark_messages_as_read(sender_id: str, receiver_id: str):
+    """Mark all unread messages from a sender to the current user (receiver) as read."""
+    try:
+        from database import supabase
+        supabase.table("employee_messages").update({"is_read": True}).eq("sender_id", sender_id).eq("receiver_id", receiver_id).execute()
+    except Exception as e:
+        print(f"Error marking messages read: {e}")

@@ -44,7 +44,20 @@ app = Flask(__name__)
 app.config['SECRET_KEY'] = SECRET_KEY
 app.config['SESSION_TYPE'] = 'filesystem'
 app.config['PERMANENT_SESSION_LIFETIME'] = timedelta(minutes=15)
+app.config['TEMPLATES_AUTO_RELOAD'] = True
+app.config['SEND_FILE_MAX_AGE_DEFAULT'] = 0
 Session(app)
+
+# Force Jinja2 to always reload templates from disk — no in-memory cache
+app.jinja_env.auto_reload = True
+app.jinja_env.cache = {}
+
+@app.after_request
+def add_header(response):
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, post-check=0, pre-check=0, max-age=0'
+    response.headers['Pragma'] = 'no-cache'
+    response.headers['Expires'] = '-1'
+    return response
 
 
 # ─────────────────────────────────────────────
@@ -79,6 +92,7 @@ def to_emp(d):
     if not hasattr(obj, 'last_ip_address'): obj.last_ip_address = None
     if not hasattr(obj, 'employee_number'): obj.employee_number = "N/A"
     if not hasattr(obj, 'role'): obj.role = "Employee"
+    if not hasattr(obj, 'emergency_email'): obj.emergency_email = None
     
     return obj
 
@@ -244,14 +258,162 @@ def employee_dashboard():
         return redirect("/")
 
     employee = to_emp(emp)
-    return render_template("employee.html", employee=employee)
+    
+    # Fetch tasks
+    try:
+        from sql_queries import get_employee_tasks, get_all_employees
+        tasks = get_employee_tasks(employee.id)
+        # Fetch colleagues (all employees except current user)
+        all_emps = get_all_employees()
+        colleagues = [to_emp(e) for e in all_emps if e["id"] != employee.id]
+    except Exception as e:
+        print(f"Failed to load dashboard data: {e}")
+        tasks = []
+        colleagues = []
+
+    return render_template("employee.html", employee=employee, tasks=tasks, colleagues=colleagues)
+
+
+# ─────────────────────────────────────────────
+#  Employee Messaging API
+# ─────────────────────────────────────────────
+@app.route("/employee/api/messages/<other_user_id>", methods=["GET", "POST"])
+def employee_messages_api(other_user_id):
+    if not session.get("employee_logged_in"):
+        return jsonify({"success": False, "message": "Unauthorized"}), 401
+    
+    current_user_id = session["employee_id"]
+    from sql_queries import get_employee_messages, send_employee_message, mark_messages_as_read
+
+    if request.method == "POST":
+        message_text = request.json.get("message_text", "").strip()
+        if not message_text:
+            return jsonify({"success": False, "message": "Message text is required"}), 400
+        result = send_employee_message(current_user_id, other_user_id, message_text)
+        if result:
+            return jsonify({"success": True, "message": result})
+        return jsonify({"success": False, "message": "Failed to send message"}), 500
+    
+    # GET request: fetch chat history and mark as read
+    try:
+        mark_messages_as_read(sender_id=other_user_id, receiver_id=current_user_id)
+        messages = get_employee_messages(current_user_id, other_user_id)
+        return jsonify({"success": True, "messages": messages})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+
+# ─────────────────────────────────────────────
+#  Employee Tasks API
+# ─────────────────────────────────────────────
+@app.route("/employee/api/tasks", methods=["POST"])
+def add_task():
+    if not session.get("employee_logged_in"):
+        return jsonify({"success": False, "message": "Unauthorized"}), 401
+    title = request.form.get("title", "").strip()
+    if not title:
+        return jsonify({"success": False, "message": "Title is required"}), 400
+    try:
+        from sql_queries import add_employee_task
+        task = add_employee_task(session["employee_id"], title)
+        return jsonify({"success": True, "task": task[0] if task else None})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
+
+@app.route("/employee/api/tasks/<task_id>", methods=["PATCH", "DELETE"])
+def update_delete_task(task_id):
+    if not session.get("employee_logged_in"):
+        return jsonify({"success": False, "message": "Unauthorized"}), 401
+    try:
+        from sql_queries import update_task_status, delete_employee_task
+        if request.method == "PATCH":
+            is_completed = request.json.get("is_completed", False)
+            update_task_status(task_id, session["employee_id"], is_completed)
+            return jsonify({"success": True})
+        elif request.method == "DELETE":
+            delete_employee_task(task_id, session["employee_id"])
+            return jsonify({"success": True})
+    except Exception as e:
+        return jsonify({"success": False, "message": str(e)}), 500
 
 
 @app.route("/logout")
 def logout():
     session.pop("employee_logged_in", None)
     session.pop("employee_id", None)
-    flash("You have been logged out successfully.", "success")
+    flash("You have been successfully logged out.", "success")
+    return redirect("/")
+
+
+
+# ─────────────────────────────────────────────
+#  Employee Security Actions
+# ─────────────────────────────────────────────
+@app.route("/employee/change-password", methods=["POST"])
+def employee_change_password():
+    if not session.get("employee_logged_in"):
+        return jsonify({"success": False, "message": "Unauthorized"}), 401
+
+    current_pwd  = request.form.get("current_password", "").encode()
+    new_pwd      = request.form.get("new_password", "")
+    confirm_pwd  = request.form.get("confirm_password", "")
+
+    if not all([current_pwd, new_pwd, confirm_pwd]):
+        flash("All password fields are required.", "danger")
+        return redirect("/employee/dashboard")
+
+    if new_pwd != confirm_pwd:
+        flash("New passwords do not match.", "danger")
+        return redirect("/employee/dashboard")
+
+    # Password Complexity Check
+    if not re.match(r'^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$', new_pwd):
+        flash("Password must be at least 8 characters and include a letter, a number, and a special character.", "danger")
+        return redirect("/employee/dashboard")
+
+    emp = get_employee_by_id(session["employee_id"])
+    if not emp or not bcrypt.checkpw(current_pwd, emp["password"].encode()):
+        flash("Incorrect current password.", "danger")
+        return redirect("/employee/dashboard")
+
+    try:
+        hashed = bcrypt.hashpw(new_pwd.encode(), bcrypt.gensalt()).decode()
+        update_employee_password(session["employee_id"], hashed)
+        flash("✅ Password updated successfully.", "success")
+    except Exception as e:
+        flash(f"Error updating password: {e}", "danger")
+
+    return redirect("/employee/dashboard")
+
+
+@app.route("/employee/update-emergency-email", methods=["POST"])
+def employee_update_emergency_email():
+    if not session.get("employee_logged_in"):
+        return jsonify({"success": False, "message": "Unauthorized"}), 401
+
+    email = request.form.get("emergency_email", "").strip().lower()
+    if not email:
+        flash("Please provide a valid email address.", "danger")
+        return redirect("/employee/dashboard")
+
+    try:
+        from sql_queries import update_employee_emergency_email
+        update_employee_emergency_email(session["employee_id"], email)
+        flash("✅ Emergency recovery email updated.", "success")
+    except Exception as e:
+        flash(f"Error updating emergency email: {e}", "danger")
+
+    return redirect("/employee/dashboard")
+
+
+@app.route("/employee/terminate-sessions", methods=["POST"])
+def employee_terminate_sessions():
+    """Simulate terminating all sessions by clearing current session and forcing logout."""
+    if not session.get("employee_logged_in"):
+        return redirect("/")
+    
+    session.clear()
+    flash("🔒 All active sessions have been terminated. Please log in again to continue.", "warning")
     return redirect("/")
 
 
@@ -298,7 +460,7 @@ def forgot_password():
                             f"This code expires in 15 minutes.\n\n"
                             f"If you did not request this, please ignore this email — your password will not change."
                         ),
-                        subject="Your Password Reset Code — Employee System",
+                        subject="Your Password Reset Code — Tech Africa IT Hub",
                         to_email=email   # send directly to the employee, NOT the admin
                     )
                     email_sent = True

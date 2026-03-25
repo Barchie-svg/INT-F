@@ -27,6 +27,7 @@ ALTER TABLE employees ADD COLUMN IF NOT EXISTS status          VARCHAR(20) NOT N
 ALTER TABLE employees ADD COLUMN IF NOT EXISTS role            VARCHAR(50) NOT NULL DEFAULT 'Employee';
 ALTER TABLE employees ADD COLUMN IF NOT EXISTS employee_number VARCHAR(50);
 ALTER TABLE employees ADD COLUMN IF NOT EXISTS username        VARCHAR(50);
+ALTER TABLE employees ADD COLUMN IF NOT EXISTS emergency_email VARCHAR(255);
 
 -- STEP 2: Create intrusion_logs table
 CREATE TABLE IF NOT EXISTS intrusion_logs (
