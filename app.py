@@ -9,7 +9,7 @@ import random
 from datetime import datetime, timedelta, timezone
 from config import SECRET_KEY
 from intrusion import is_suspicious_time
-from email_alert import send_alert, send_intrusion_alert
+from email_alert import send_alert, send_alert_async, send_intrusion_alert, clear_config_cache
 from types import SimpleNamespace
 
 from sql_queries import (
@@ -302,7 +302,7 @@ def employee_messages_api(other_user_id):
 def add_task():
     if not session.get("employee_logged_in"):
         return jsonify({"success": False, "message": "Unauthorized"}), 401
-    title = request.form.get("title", "").strip()
+    title = (request.json.get("title") if request.is_json and request.json else request.form.get("title", "")).strip()
     if not title:
         return jsonify({"success": False, "message": "Title is required"}), 400
     try:
@@ -416,20 +416,27 @@ def employee_terminate_sessions():
 # ─────────────────────────────────────────────
 @app.route("/employee/forgot-password", methods=["GET", "POST"])
 def forgot_password():
-    """Send a 6-digit OTP to the employee's registered email."""
+    """Send a 6-digit OTP to the employee's registered email with instant response."""
     if session.get("employee_logged_in") or session.get("admin_logged_in"):
         return redirect("/")
 
     if request.method == "POST":
-        email = request.form.get("email", "").strip().lower()
+        identifier = request.form.get("email", "").strip()
+        print(f"[FORGOT PASSWORD] Request received for identifier: '{identifier}'")
 
-        if not email:
-            flash("Please enter your registered email address.", "danger")
+        if not identifier:
+            flash("Please enter your registered email address or username.", "danger")
             return redirect("/employee/forgot-password")
 
-        user = get_employee_by_email_only(email)
+        # Support lookup by email, username, or employee number
+        user = get_employee_by_email_only(identifier.lower())
+        if not user:
+            user = get_user_by_email_or_username(identifier)
+
+        print(f"[FORGOT PASSWORD] Lookup result: {'Found ' + user.get('username', '') + ' (Email: ' + user.get('email', '') + ')' if user else 'NO USER FOUND'}")
 
         if user and user.get("role") != "Admin":
+            email = user.get("email") or identifier.lower()
             # Generate a 6-digit numeric OTP (stored as the "token" field)
             otp = str(random.randint(100000, 999999))
             expires_at = (datetime.now(timezone.utc) + timedelta(minutes=15)).isoformat()
@@ -437,44 +444,34 @@ def forgot_password():
             try:
                 # create_password_reset_token already deletes old tokens internally
                 create_password_reset_token(user["id"], otp, expires_at)
+                print(f"[OTP RESET] OTP generated for {email} (expires: {expires_at})")
 
-                print(f"[OTP RESET] Generated OTP for {email}: {otp} (expires: {expires_at})")
+                # Asynchronous email delivery: dispatches in background thread so HTTP response is instant!
+                send_alert_async(
+                    message=(
+                        f"Hello {user.get('name') or user.get('username', 'Team Member')},\n\n"
+                        f"A password reset was requested for your account ({email}).\n\n"
+                        f"Your One-Time Verification Code is:\n\n"
+                        f"    {otp}\n\n"
+                        f"Enter this code on the Reset Password page along with your email address.\n"
+                        f"This verification code expires in 15 minutes.\n\n"
+                        f"If you did not request this, please ignore this email — your account remains secure."
+                    ),
+                    subject="Your Password Reset Verification Code — Tech Africa IT",
+                    to_email=email
+                )
 
-                email_sent = False
-                try:
-                    send_alert(
-                        message=(
-                            f"Hello,\n\n"
-                            f"A password reset was requested for your account ({email}).\n\n"
-                            f"Your One-Time Password (OTP) is:\n\n"
-                            f"    {otp}\n\n"
-                            f"Enter this code on the Reset Password page along with your email address.\n"
-                            f"This code expires in 15 minutes.\n\n"
-                            f"If you did not request this, please ignore this email — your password will not change."
-                        ),
-                        subject="Your Password Reset Code — Tech Africa IT Hub",
-                        to_email=email   # send directly to the employee, NOT the admin
-                    )
-                    email_sent = True
-                except Exception as mail_err:
-                    print(f"[WARN] OTP email not sent: {mail_err}")
-
-                if email_sent:
-                    flash("A 6-digit reset code has been sent to your email address. Enter it below.", "success")
-                else:
-                    flash("Could not send the reset code email. Please contact your administrator.", "danger")
-                    return redirect("/employee/forgot-password")
+                flash("If an account exists with this email, a verification code has been sent.", "info")
+                return redirect(f"/employee/reset-password?email={email}")
 
             except Exception as e:
                 print(f"[ERROR] Could not create OTP token: {e}")
                 flash("Could not process your reset request at this time. Please try again.", "danger")
                 return redirect("/employee/forgot-password")
         else:
-            # Always show same message to prevent email enumeration
-            flash("If that email is registered, a reset code has been sent.", "info")
-
-        # Redirect to reset page so user can enter email + OTP
-        return redirect("/employee/reset-password")
+            # Always show neutral message to prevent email enumeration
+            flash("If an account exists with this email, a verification code has been sent.", "info")
+            return redirect(f"/employee/reset-password?email={identifier}")
 
     return render_template("forgot_password.html")
 
@@ -491,20 +488,23 @@ def reset_password():
         # Validate OTP is 6 digits
         if not otp.isdigit() or len(otp) != 6:
             flash("Please enter the 6-digit code sent to your email.", "danger")
-            return redirect("/employee/reset-password")
+            return redirect(f"/employee/reset-password?email={email}")
 
         # Look up the OTP in the DB
         token_record = get_password_reset_token(otp)
 
         if not token_record:
-            flash("Incorrect code. Please check your email and try again.", "danger")
-            return redirect("/employee/reset-password")
+            flash("Incorrect or expired code. Please verify the code and try again.", "danger")
+            return redirect(f"/employee/reset-password?email={email}")
 
-        # Verify the email matches the OTP owner
+        # Verify the email or username matches the OTP owner
         user = get_employee_by_email_only(email)
+        if not user:
+            user = get_user_by_email_or_username(email)
+
         if not user or str(user["id"]) != str(token_record["user_id"]):
-            flash("This code does not match the provided email address.", "danger")
-            return redirect("/employee/reset-password")
+            flash("This code does not match the provided account or email address.", "danger")
+            return redirect(f"/employee/reset-password?email={email}")
 
         # Check expiry
         try:
@@ -520,11 +520,11 @@ def reset_password():
 
         if new_password != confirm:
             flash("Passwords do not match.", "danger")
-            return redirect("/employee/reset-password")
+            return redirect(f"/employee/reset-password?email={email}")
 
         if not re.match(r'^(?=.*[A-Za-z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$', new_password):
             flash("Password must be at least 8 characters and include a letter, a number, and a special character.", "danger")
-            return redirect("/employee/reset-password")
+            return redirect(f"/employee/reset-password?email={email}")
 
         try:
             hashed = bcrypt.hashpw(new_password.encode(), bcrypt.gensalt()).decode()
@@ -535,7 +535,7 @@ def reset_password():
             return redirect("/")
         except Exception as e:
             flash(f"Failed to reset password: {e}", "danger")
-            return redirect("/employee/reset-password")
+            return redirect(f"/employee/reset-password?email={email}")
 
     return render_template("reset_password.html")
 
@@ -600,6 +600,7 @@ def admin_settings_update():
 
     if admin_email or sender_email or sender_password:
         update_system_settings(admin_email, sender_email, sender_password)
+        clear_config_cache()
         flash("System settings saved successfully.", "success")
         log_audit_action(session.get("admin_username"), "Update Settings", "System Notifications", request.remote_addr)
     else:

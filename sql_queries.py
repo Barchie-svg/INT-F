@@ -318,12 +318,23 @@ def update_setting(key: str, value: str):
 
 
 def get_system_settings() -> dict:
-    """Return an object of system settings."""
-    return {
-        "admin_email": get_setting("admin_email", "ivybarchebo40@gmail.com"),
-        "sender_email": get_setting("sender_email", "ivybarchebo40@gmail.com"),
-        "sender_password": get_setting("sender_password", "oqcfpzwewjccjtgt"),
+    """Return an object of system settings in a single fast query."""
+    defaults = {
+        "admin_email": "ivybarchebo916@gmail.com",
+        "sender_email": "ivybarchebo916@gmail.com",
+        "sender_password": "zyufnycxoymgthit",
     }
+    try:
+        res = supabase.table("system_settings").select("key, value").execute()
+        if res.data:
+            for row in res.data:
+                k = row.get("key")
+                v = row.get("value")
+                if k and v is not None:
+                    defaults[k] = v
+    except Exception as e:
+        print(f"[WARN] Failed to fetch system_settings in batch: {e}")
+    return defaults
 
 
 def update_system_settings(admin_email: str, sender_email: str, sender_password: str = None):
@@ -385,12 +396,20 @@ def get_employee_messages(user1_id: str, user2_id: str):
     """Fetch chat history between two users, ordered by time."""
     try:
         from database import supabase
-        res = supabase.table("employee_messages").select(
-            "id, sender_id, receiver_id, message_text, is_read, created_at, sender:profiles!sender_id(name, username), receiver:profiles!receiver_id(name, username)"
-        ).or_(
-            f"and(sender_id.eq.{user1_id},receiver_id.eq.{user2_id}),and(sender_id.eq.{user2_id},receiver_id.eq.{user1_id})"
-        ).order("created_at").execute()
-        return res.data or []
+        try:
+            res = supabase.table("employee_messages").select(
+                "id, sender_id, receiver_id, message_text, is_read, created_at, sender:employees!sender_id(name, username), receiver:employees!receiver_id(name, username)"
+            ).or_(
+                f"and(sender_id.eq.{user1_id},receiver_id.eq.{user2_id}),and(sender_id.eq.{user2_id},receiver_id.eq.{user1_id})"
+            ).order("created_at").execute()
+            return res.data or []
+        except Exception:
+            res = supabase.table("employee_messages").select(
+                "id, sender_id, receiver_id, message_text, is_read, created_at"
+            ).or_(
+                f"and(sender_id.eq.{user1_id},receiver_id.eq.{user2_id}),and(sender_id.eq.{user2_id},receiver_id.eq.{user1_id})"
+            ).order("created_at").execute()
+            return res.data or []
     except Exception as e:
         print(f"Error fetching messages: {e}")
         return []

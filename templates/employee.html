@@ -664,7 +664,460 @@
 /* ── Responsive ── */
 @media(max-width:1024px){.dashboard-sidebar{width:var(--sidebar-collapsed)}.dashboard-sidebar span{display:none}.sidebar-logo span{display:none}.sidebar-nav{align-items:center}.nav-item{padding:11px;justify-content:center}}
 @media(max-width:768px){.dashboard-sidebar{display:none}.grid-col-12,.grid-col-8,.grid-col-6,.grid-col-4,.grid-col-3{grid-column:span 12}}
+
+/* ══════════════════════════════════════════════════
+   EMPLOYEE DASHBOARD — Light Mode Overrides
+   ══════════════════════════════════════════════════ */
+
+/* ── Main layout ── */
+body.light-mode .dashboard-container {
+  background: var(--bg-primary);
+}
+body.light-mode .main-content {
+  background: var(--bg-primary);
+}
+
+/* ── Sidebar ── */
+body.light-mode .dashboard-sidebar {
+  background: #ffffff;
+  border-right: 1px solid rgba(0,0,0,0.08);
+}
+body.light-mode .sidebar-header {
+  border-bottom: 1px solid rgba(0,0,0,0.07);
+}
+body.light-mode .sidebar-logo {
+  color: var(--accent);
+}
+body.light-mode .nav-item {
+  color: var(--text-secondary);
+}
+body.light-mode .nav-item:hover {
+  background: rgba(79,110,247,0.07);
+  color: var(--accent);
+}
+body.light-mode .nav-item.active {
+  background: linear-gradient(90deg, rgba(79,110,247,0.14), rgba(79,110,247,0.04));
+  color: var(--accent);
+  box-shadow: none;
+}
+body.light-mode .logout-nav {
+  color: var(--danger);
+}
+body.light-mode .logout-nav:hover {
+  background: rgba(214,59,95,0.08);
+  color: var(--danger);
+}
+
+/* ── Header ── */
+body.light-mode .dashboard-header {
+  border-bottom-color: rgba(0,0,0,0.06);
+}
+body.light-mode .header-title {
+  color: var(--text-primary);
+}
+body.light-mode .header-subtitle {
+  color: var(--text-secondary);
+}
+body.light-mode .status-badge {
+  background: rgba(26,158,122,0.10);
+  color: #1a9e7a;
+}
+
+/* ── Cards (card-glass) ── */
+body.light-mode .card-glass {
+  background: #ffffff;
+  border: 1px solid rgba(0,0,0,0.07);
+  box-shadow: 0 1px 8px rgba(0,0,0,0.05);
+}
+body.light-mode .card-header h3 {
+  color: var(--text-primary);
+}
+body.light-mode .card-header i {
+  color: var(--accent);
+}
+body.light-mode .card-footer-info {
+  color: var(--text-secondary);
+  border-top: 1px solid rgba(0,0,0,0.06);
+}
+
+/* ── Identity card internals ── */
+body.light-mode .last-login {
+  border-top-color: rgba(0,0,0,0.06);
+  color: var(--text-secondary);
+}
+body.light-mode .identity-stats {
+  color: var(--text-primary);
+}
+
+/* ── Pulse check stats divider ── */
+body.light-mode .card-glass [style*="border-top:1px solid rgba(255,255,255,0.06)"],
+body.light-mode .card-glass [style*="border-top: 1px solid rgba(255,255,255,.06)"] {
+  border-top-color: rgba(0,0,0,0.07) !important;
+}
+
+/* ── Mini stat icons hardcoded colors — keep them, just adjust contrast ── */
+
+/* ── Tasks ── */
+body.light-mode .task-item {
+  background: rgba(0,0,0,0.02);
+  border: 1px solid rgba(0,0,0,0.05);
+}
+body.light-mode .task-item:hover {
+  background: rgba(79,110,247,0.05);
+}
+body.light-mode .task-check {
+  border-color: rgba(0,0,0,0.18);
+}
+body.light-mode .task-check.done {
+  background: var(--accent);
+  border-color: var(--accent);
+}
+body.light-mode .task-title {
+  color: var(--text-primary);
+}
+body.light-mode .task-meta {
+  color: var(--text-secondary);
+}
+
+/* ── Projects ── */
+body.light-mode .project-item {
+  background: rgba(0,0,0,0.02);
+  border: 1px solid rgba(0,0,0,0.05);
+  border-radius: 12px;
+}
+body.light-mode .mini-progress-track {
+  background: rgba(0,0,0,0.08);
+}
+
+/* ── KPI bars ── */
+body.light-mode .bar {
+  background: rgba(79,110,247,0.12);
+}
+body.light-mode .bar.active, body.light-mode .bar:hover {
+  background: var(--accent);
+}
+
+/* ── Security meters ── */
+body.light-mode .sec-bar-wrap {
+  background: rgba(0,0,0,0.07);
+}
+
+/* ── Security info box ── */
+body.light-mode .card-body [style*="background:rgba(108,92,231,0.07)"],
+body.light-mode .card-body [style*="background: rgba(108,92,231,0.07)"] {
+  background: rgba(79,110,247,0.06) !important;
+  color: var(--text-secondary) !important;
+}
+body.light-mode .card-body [style*="background:rgba(108,92,231,0.07)"] strong,
+body.light-mode .card-body [style*="background: rgba(108,92,231,0.07)"] strong {
+  color: var(--text-primary) !important;
+}
+
+/* ── Profile table ── */
+body.light-mode .profile-table td {
+  border-bottom-color: rgba(0,0,0,0.06);
+  color: var(--text-primary);
+}
+body.light-mode .profile-avatar-row hr,
+body.light-mode [style*="border-color:rgba(255,255,255,0.06)"] {
+  border-color: rgba(0,0,0,0.07) !important;
+}
+
+/* ── Badges ── */
+body.light-mode .badge-item {
+  background: rgba(0,0,0,0.03);
+  border: 1px solid rgba(0,0,0,0.06);
+  color: var(--text-secondary);
+}
+body.light-mode .badge-item.badge-locked {
+  opacity: 0.5;
+}
+
+/* ── Team cards ── */
+body.light-mode .team-card {
+  background: #ffffff;
+  border: 1px solid rgba(0,0,0,0.07);
+  box-shadow: 0 1px 6px rgba(0,0,0,0.04);
+}
+body.light-mode .team-card h6 {
+  color: var(--text-primary);
+}
+body.light-mode .team-card p {
+  color: var(--text-secondary);
+}
+body.light-mode .team-status.online {
+  background: var(--success);
+  box-shadow: 0 0 4px rgba(26,158,122,0.5);
+}
+body.light-mode .team-status.away {
+  background: var(--warning);
+}
+
+/* ── Announcements ── */
+body.light-mode .announcement-item {
+  border-bottom-color: rgba(0,0,0,0.07);
+}
+body.light-mode .ann-content h4 {
+  color: var(--text-primary);
+}
+body.light-mode .ann-content p {
+  color: var(--text-secondary);
+}
+
+/* ── Quick tools ── */
+body.light-mode .tool-card {
+  background: #ffffff;
+  border: 1px solid rgba(0,0,0,0.07);
+  color: var(--text-secondary);
+  box-shadow: 0 1px 6px rgba(0,0,0,0.04);
+}
+body.light-mode .tool-card:hover {
+  background: rgba(79,110,247,0.06);
+  color: var(--accent);
+  border-color: rgba(79,110,247,0.20);
+  box-shadow: 0 4px 18px rgba(79,110,247,0.12);
+}
+
+/* ── Security activity log ── */
+body.light-mode .activity-log li {
+  background: rgba(0,0,0,0.03);
+  border: 1px solid rgba(0,0,0,0.06);
+  color: var(--text-primary);
+}
+
+/* ── Action buttons ── */
+body.light-mode .btn-action {
+  background: var(--accent);
+  color: #ffffff;
+}
+body.light-mode .btn-action-outline {
+  border-color: rgba(0,0,0,0.12);
+  color: var(--text-primary);
+}
+body.light-mode .btn-action-outline:hover {
+  background: rgba(0,0,0,0.04);
+}
+
+/* ── Modals (Bootstrap dark overrides) ── */
+body.light-mode .modal-content {
+  background: #ffffff !important;
+  border: 1px solid rgba(0,0,0,0.10) !important;
+  box-shadow: 0 16px 60px rgba(0,0,0,0.12) !important;
+  color: var(--text-primary) !important;
+}
+body.light-mode .modal-header {
+  background: #f4f5fa;
+  border-bottom: 1px solid rgba(0,0,0,0.08) !important;
+}
+body.light-mode .modal-title {
+  color: var(--text-primary);
+}
+body.light-mode .modal-footer {
+  background: #f4f5fa;
+  border-top: 1px solid rgba(0,0,0,0.08) !important;
+}
+body.light-mode .modal-body {
+  color: var(--text-secondary);
+}
+/* Input inside modals */
+body.light-mode .modal-body .form-control.bg-dark,
+body.light-mode .modal-body input[class*="bg-dark"] {
+  background: #f8f9fc !important;
+  color: var(--text-primary) !important;
+  border: 1px solid rgba(0,0,0,0.12) !important;
+}
+/* "Recovery Email" modal */
+body.light-mode .modal-content.bg-dark {
+  background: #ffffff !important;
+}
+body.light-mode .text-white {
+  color: var(--text-primary) !important;
+}
+body.light-mode .border-secondary {
+  border-color: rgba(0,0,0,0.09) !important;
+}
+body.light-mode .text-secondary {
+  color: var(--text-secondary) !important;
+}
+body.light-mode .btn-close-white {
+  filter: invert(1) grayscale(1) !important;
+}
+body.light-mode .btn-outline-secondary {
+  color: var(--text-secondary);
+  border-color: rgba(0,0,0,0.15);
+}
+body.light-mode .btn-outline-secondary:hover {
+  background: rgba(0,0,0,0.05);
+}
+/* "Change Password" modal */
+body.light-mode [style*="background:#1a1e2e"] {
+  background: #f8f9fc !important;
+}
+
+/* ── Chat modal ── */
+body.light-mode .chat-window {
+  background: #f4f5fa;
+}
+body.light-mode .chat-messages {
+  background: #f4f5fa;
+}
+body.light-mode .chat-msg.received {
+  background: rgba(0,0,0,0.06);
+  color: var(--text-primary);
+}
+body.light-mode .chat-input-area {
+  background: #ffffff;
+  border-top: 1px solid rgba(0,0,0,0.08);
+}
+body.light-mode .chat-input-area input {
+  background: #f4f5fa !important;
+  border: 1px solid rgba(0,0,0,0.12) !important;
+  color: var(--text-primary) !important;
+}
+body.light-mode .chat-input-area input:focus {
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 2px rgba(79,110,247,0.15) !important;
+}
+
+/* ── Toast ── */
+body.light-mode .custom-toast {
+  background: #ffffff;
+  border: 1px solid rgba(0,0,0,0.10);
+  border-left: 4px solid var(--accent);
+  color: var(--text-primary);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.12);
+}
+
+/* ── Circular chart text ── */
+body.light-mode .percentage {
+  fill: var(--text-primary);
+}
+body.light-mode .circle-bg {
+  stroke: rgba(0,0,0,0.07);
+}
+
+/* ── Section title ── */
+body.light-mode .section-title {
+  color: var(--text-primary);
+}
+body.light-mode .section-title::after {
+  background: rgba(0,0,0,0.09);
+}
+
+/* ── Bootstrap alert overrides (used in employee.html flash) ── */
+body.light-mode .alert-success {
+  background: rgba(26,158,122,0.09) !important;
+  color: #1a9e7a !important;
+  border-color: rgba(26,158,122,0.25) !important;
+}
+body.light-mode .alert-danger {
+  background: rgba(214,59,95,0.09) !important;
+  color: #d63b5f !important;
+  border-color: rgba(214,59,95,0.25) !important;
+}
+body.light-mode .alert-warning {
+  background: rgba(192,120,0,0.09) !important;
+  color: #c07800 !important;
+  border-color: rgba(192,120,0,0.25) !important;
+}
+body.light-mode .btn-close {
+  filter: none !important;
+}
+
+/* ── Refined accessible semantic colors in light mode ── */
+body.light-mode [style*="color:#ffc107"],
+body.light-mode [style*="color: #ffc107"] {
+  color: var(--warning) !important;
+}
+body.light-mode [style*="color:#00b894"],
+body.light-mode [style*="color: #00b894"] {
+  color: var(--success) !important;
+}
+body.light-mode [style*="color:#6c5ce7"],
+body.light-mode [style*="color: #6c5ce7"] {
+  color: var(--accent) !important;
+}
+body.light-mode [style*="color:#0984e3"],
+body.light-mode [style*="color: #0984e3"] {
+  color: #0284c7 !important;
+}
+body.light-mode [style*="color:#fd79a8"],
+body.light-mode [style*="color: #fd79a8"] {
+  color: #be185d !important;
+}
+body.light-mode [style*="color:#e17055"],
+body.light-mode [style*="color: #e17055"] {
+  color: #c2410c !important;
+}
+
+/* ── Mini stats refined ── */
+body.light-mode .mini-stat {
+  background: #ffffff;
+  border: 1px solid rgba(0,0,0,0.06);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.03);
+}
+body.light-mode .mini-stat-val {
+  color: var(--text-primary);
+}
+body.light-mode .mini-stat-lbl {
+  color: var(--text-secondary);
+}
+
+/* ── Task priority badges ── */
+body.light-mode .p-high {
+  background: rgba(207, 48, 80, 0.10) !important;
+  color: #cf3050 !important;
+}
+body.light-mode .p-med {
+  background: rgba(217, 119, 6, 0.10) !important;
+  color: #b45309 !important;
+}
+body.light-mode .p-low {
+  background: rgba(13, 148, 136, 0.10) !important;
+  color: #0f766e !important;
+}
+
+/* ── Progress tracks ── */
+body.light-mode .progress {
+  background: rgba(0,0,0,0.06) !important;
+}
+body.light-mode .progress-bar {
+  background: var(--accent) !important;
+}
+
+/* ── Modal form controls in light mode ── */
+body.light-mode .modal-content input.bg-dark,
+body.light-mode .modal-content .form-control.bg-dark {
+  background: #f8fafc !important;
+  color: var(--text-primary) !important;
+  border-color: rgba(0,0,0,0.12) !important;
+}
+body.light-mode .modal-content input.bg-dark:focus,
+body.light-mode .modal-content .form-control.bg-dark:focus {
+  background: #ffffff !important;
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px rgba(79,110,247,0.15) !important;
+}
+
+/* ── Inline hardcoded backgrounds — generic override helpers ── */
+body.light-mode [style*="background:rgba(255,255,255,0.02)"],
+body.light-mode [style*="background: rgba(255,255,255,0.02)"],
+body.light-mode [style*="background:rgba(255,255,255,.02)"] {
+  background: rgba(0,0,0,0.02) !important;
+}
+body.light-mode [style*="background:rgba(255,255,255,0.03)"],
+body.light-mode [style*="background: rgba(255,255,255,0.03)"],
+body.light-mode [style*="background:rgba(255,255,255,.03)"] {
+  background: rgba(0,0,0,0.03) !important;
+}
+body.light-mode [style*="background:rgba(255,255,255,0.05)"],
+body.light-mode [style*="background: rgba(255,255,255,0.05)"],
+body.light-mode [style*="background:rgba(255,255,255,.05)"],
+body.light-mode [style*="background:rgba(255,255,255,.07)"] {
+  background: rgba(0,0,0,0.04) !important;
+}
 </style>
+
 
 <script>
 // ── Live Clock ──
@@ -724,20 +1177,76 @@ function showToast(msg, iconClass="fa-solid fa-circle-info text-primary", durati
 }
 
 // ── Task toggle ──
-function toggleTask(btn){
-  btn.classList.toggle('done');
-  const title=btn.nextElementSibling.querySelector('.task-title');
-  title.classList.toggle('done-text');
+function toggleTask(taskIdOrBtn, btnEl){
+  const btn = btnEl || (taskIdOrBtn instanceof HTMLElement ? taskIdOrBtn : null);
+  const taskId = typeof taskIdOrBtn === 'string' ? taskIdOrBtn : (btn ? btn.closest('.task-item')?.dataset.id : null);
+  
+  if (btn) {
+    btn.classList.toggle('done');
+    const title = btn.nextElementSibling ? btn.nextElementSibling.querySelector('.task-title') : null;
+    if (title) title.classList.toggle('done-text');
+  }
+
+  if (taskId) {
+    const isDone = btn ? btn.classList.contains('done') : false;
+    fetch(`/employee/api/tasks/${taskId}`, {
+      method: 'PATCH',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({is_completed: isDone})
+    }).catch(err => console.error(err));
+  }
+}
+
+// ── Delete task ──
+function deleteTask(taskId, btnEl){
+  if (!confirm('Are you sure you want to delete this task?')) return;
+  const li = btnEl ? btnEl.closest('.task-item') : null;
+  if (li) li.remove();
+
+  if (taskId) {
+    fetch(`/employee/api/tasks/${taskId}`, {
+      method: 'DELETE'
+    }).catch(err => console.error(err));
+  }
 }
 
 // ── Add task ──
 function addTask(){
-  const text=prompt('Enter new task:');
-  if(!text||!text.trim())return;
-  const li=document.createElement('li');
-  li.className='task-item';
-  li.innerHTML=`<button class="task-check" onclick="toggleTask(this)"><i class="fa-solid fa-check"></i></button><div class="task-text"><span class="task-title">${text.trim()}</span><span class="task-meta">Added just now</span></div><span class="task-priority p-med">Medium</span>`;
-  document.getElementById('taskList').appendChild(li);
+  const text = prompt('Enter new task:');
+  if (!text || !text.trim()) return;
+  
+  fetch('/employee/api/tasks', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({title: text.trim()})
+  })
+  .then(res => res.json())
+  .then(data => {
+    const taskId = data.task ? data.task.id : '';
+    const li = document.createElement('li');
+    li.className = 'task-item';
+    if (taskId) li.dataset.id = taskId;
+    li.innerHTML = `
+      <button class="task-check" onclick="toggleTask('${taskId}', this)"><i class="fa-solid fa-check"></i></button>
+      <div class="task-text">
+        <span class="task-title">${text.trim()}</span>
+        <span class="task-meta"><i class="fa-solid fa-clock me-1 text-info"></i>Added just now</span>
+      </div>
+      <button class="btn btn-sm text-danger ms-auto" style="border:none;background:transparent" onclick="deleteTask('${taskId}', this)"><i class="fa-solid fa-trash"></i></button>
+    `;
+    const taskList = document.getElementById('taskList');
+    if (taskList) taskList.appendChild(li);
+  })
+  .catch(() => {
+    const li = document.createElement('li');
+    li.className = 'task-item';
+    li.innerHTML = `
+      <button class="task-check" onclick="toggleTask(this)"><i class="fa-solid fa-check"></i></button>
+      <div class="task-text"><span class="task-title">${text.trim()}</span><span class="task-meta">Added just now</span></div>
+    `;
+    const taskList = document.getElementById('taskList');
+    if (taskList) taskList.appendChild(li);
+  });
 }
 
 // ── Team search ──

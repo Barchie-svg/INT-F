@@ -30,59 +30,248 @@
   --transition: 0.25s ease;
 }
 
-/* Light Mode Overrides */
+/* ══════════════════════════════════════════════════════════
+   LIGHT MODE — Calm, elegant, professional IT platform
+   Design principles:
+   - Warm off-white backgrounds (not pure white)
+   - One primary brand color (indigo #4f6ef7)
+   - Neutral grays for secondary elements
+   - Gentle shadows and soft borders
+   - Consistent visual hierarchy
+   All dark mode tokens are preserved in :root above.
+   ══════════════════════════════════════════════════════════ */
+
 body.light-mode {
-  --bg-primary: #f0f2f5;
-  --bg-secondary: #ffffff;
-  --bg-card: #ffffff;
-  --bg-card-hover: #f8f9fa;
-  --text-primary: #1e293b;
-  --text-secondary: #64748b;
-  --border: rgba(0, 0, 0, 0.1);
-  --shadow: 0 8px 30px rgba(0, 0, 0, 0.08);
-  --shadow-sm: 0 2px 12px rgba(0, 0, 0, 0.05);
+  /* ── Core backgrounds ── */
+  --bg-primary:      #f0f2f7;   /* warm off-white page bg */
+  --bg-secondary:    #e8eaf2;   /* slightly deeper section bg */
+  --bg-card:         #ffffff;   /* pure white cards */
+  --bg-card-hover:   #f6f7fb;   /* very subtle hover */
+
+  /* ── Brand / accent (same indigo — works on light too) ── */
+  --accent:          #4f6ef7;
+  --accent-hover:    #3a58e8;
+  --accent-glow:     rgba(79, 110, 247, 0.15);
+
+  /* ── Semantic colors — muted for light bg ── */
+  --danger:          #d63b5f;
+  --danger-soft:     rgba(214, 59, 95, 0.10);
+  --success:         #1a9e7a;
+  --success-soft:    rgba(26, 158, 122, 0.10);
+  --warning:         #c07800;
+  --warning-soft:    rgba(192, 120, 0, 0.10);
+  --info:            #0077b6;
+
+  /* ── Text ── */
+  --text-primary:    #1e2535;   /* near-black, not pure black */
+  --text-secondary:  #5a6382;   /* muted slate */
+
+  /* ── Borders & shadows ── */
+  --border:          rgba(0, 0, 0, 0.08);
+  --shadow:          0 4px 24px rgba(0, 0, 0, 0.07);
+  --shadow-sm:       0 1px 8px  rgba(0, 0, 0, 0.05);
 }
 
-body.light-mode .card-header-dark, 
-body.light-mode .table-dark-custom thead th {
-  background: rgba(0,0,0,0.03);
+/* ── Navbar ── */
+body.light-mode .navbar {
+  background: rgba(255, 255, 255, 0.97) !important;
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 1px 12px rgba(0,0,0,0.06);
+}
+body.light-mode .navbar-brand {
+  color: var(--text-primary) !important;
+}
+body.light-mode .nav-link {
+  color: var(--text-secondary) !important;
+}
+body.light-mode .nav-link:hover {
+  background: rgba(79, 110, 247, 0.07) !important;
+  color: var(--accent) !important;
 }
 
-body.light-mode .table-dark-custom tbody tr {
-  border-bottom: 1px solid rgba(0,0,0,0.05);
-}
-
-body.light-mode .table-dark-custom tbody tr:hover {
-  background: rgba(0,0,0,0.02);
-}
-
-body.light-mode .sidebar {
+/* ── User menu dropdown ── */
+body.light-mode .user-dropdown {
   background: #ffffff;
-  border-right: 1px solid var(--border);
+  border: 1px solid var(--border);
+  box-shadow: 0 8px 30px rgba(0,0,0,0.10);
+}
+body.light-mode .user-dropdown a {
+  color: var(--text-primary);
+}
+body.light-mode .user-dropdown a:hover {
+  background: rgba(79, 110, 247, 0.06);
+}
+body.light-mode .user-dropdown .divider {
+  border-top-color: var(--border);
 }
 
-body.light-mode .nav-item:hover {
-  background: rgba(0, 0, 0, 0.04);
+/* ── Auth / Login card ── */
+body.light-mode .auth-card {
+  background: #ffffff;
+  border-color: var(--border);
+  box-shadow: 0 8px 40px rgba(0,0,0,0.08);
+}
+
+/* ── Form controls ── */
+body.light-mode .form-control {
+  background: #f8f9fc !important;
+  border-color: rgba(0,0,0,0.12) !important;
+  color: var(--text-primary) !important;
+}
+body.light-mode .form-control:focus {
+  background: #ffffff !important;
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px rgba(79,110,247,0.15) !important;
+}
+body.light-mode .form-control::placeholder {
+  color: #a0a8c0 !important;
+  opacity: 1;
+}
+body.light-mode select.form-select {
+  background: #f8f9fc !important;
+  color: var(--text-primary) !important;
+  border-color: rgba(0,0,0,0.12) !important;
+}
+body.light-mode select.form-select:focus {
+  background: #ffffff !important;
+  border-color: var(--accent) !important;
+  box-shadow: 0 0 0 3px rgba(79,110,247,0.15) !important;
+}
+
+/* ── Cards ── */
+body.light-mode .card-dark {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+body.light-mode .card-dark:hover {
+  box-shadow: var(--shadow);
+  border-color: rgba(79,110,247,0.20);
+}
+body.light-mode .card-header-dark {
+  background: #f8f9fc;
+  border-bottom: 1px solid var(--border);
   color: var(--text-primary);
 }
 
-body.light-mode .navbar {
-  background: rgba(255, 255, 255, 0.95) !important;
+/* ── Stat cards ── */
+body.light-mode .stat-card {
+  background: #ffffff;
+  border: 1px solid var(--border);
+  box-shadow: var(--shadow-sm);
+}
+body.light-mode .stat-icon.blue {
+  background: rgba(79,110,247,0.10);
+  color: var(--accent);
+}
+body.light-mode .stat-icon.red {
+  background: rgba(214,59,95,0.10);
+  color: var(--danger);
+}
+body.light-mode .stat-icon.green {
+  background: rgba(26,158,122,0.10);
+  color: var(--success);
+}
+body.light-mode .stat-icon.orange {
+  background: rgba(192,120,0,0.10);
+  color: var(--warning);
 }
 
-body.light-mode .topbar {
-  background: rgba(255, 255, 255, 0.8);
+/* ── Tables ── */
+body.light-mode .table-dark-custom thead th {
+  background: #f4f5fa;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border);
+}
+body.light-mode .table-dark-custom tbody tr {
+  border-bottom: 1px solid rgba(0,0,0,0.05);
+}
+body.light-mode .table-dark-custom tbody tr:hover {
+  background: rgba(79,110,247,0.04);
+}
+body.light-mode .table-dark-custom tbody td {
+  color: var(--text-primary);
 }
 
-body.light-mode input.form-control {
-  background: #ffffff !important;
-  color: #1e293b !important;
+/* ── Alert / Flash messages ── */
+body.light-mode .alert-success {
+  background: rgba(26,158,122,0.09);
+  border-color: rgba(26,158,122,0.25);
+  color: #1a9e7a;
+}
+body.light-mode .alert-danger {
+  background: rgba(214,59,95,0.09);
+  border-color: rgba(214,59,95,0.25);
+  color: #d63b5f;
+}
+body.light-mode .alert-warning {
+  background: rgba(192,120,0,0.09);
+  border-color: rgba(192,120,0,0.25);
+  color: #c07800;
+}
+body.light-mode .alert-info {
+  background: rgba(0,119,182,0.09);
+  border-color: rgba(0,119,182,0.25);
+  color: #0077b6;
 }
 
-body.light-mode select.form-select {
-  background: #ffffff !important;
-  color: #1e293b !important;
+/* ── Status badges ── */
+body.light-mode .badge-active {
+  background: rgba(26,158,122,0.12);
+  color: #1a9e7a;
 }
+body.light-mode .badge-active::before {
+  background: #1a9e7a;
+  box-shadow: none;
+}
+body.light-mode .badge-locked {
+  background: rgba(214,59,95,0.12);
+  color: #d63b5f;
+}
+
+/* ── Action buttons ── */
+body.light-mode .btn-unlock {
+  background: rgba(26,158,122,0.10);
+  color: #1a9e7a;
+}
+body.light-mode .btn-unlock:hover {
+  background: #1a9e7a;
+  color: #ffffff;
+}
+body.light-mode .btn-lock {
+  background: rgba(192,120,0,0.10);
+  color: #c07800;
+}
+body.light-mode .btn-lock:hover {
+  background: #c07800;
+  color: #ffffff;
+}
+body.light-mode .btn-delete {
+  background: rgba(214,59,95,0.10);
+  color: #d63b5f;
+}
+body.light-mode .btn-delete:hover {
+  background: #d63b5f;
+  color: #ffffff;
+}
+
+/* ── Profile info rows ── */
+body.light-mode .info-row {
+  border-bottom-color: var(--border);
+}
+body.light-mode .profile-header {
+  background: linear-gradient(135deg, rgba(79,110,247,0.08), rgba(124,58,237,0.06));
+  border-bottom-color: var(--border);
+}
+
+/* ── Chart container ── */
+body.light-mode .chart-container {
+  background: #ffffff;
+  border-color: var(--border);
+  box-shadow: var(--shadow-sm);
+}
+
+
 
 /* ---------- Reset & Base ---------- */
 *,

@@ -14,11 +14,12 @@
     <!-- Font Awesome -->
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet" />
     <!-- Custom CSS -->
-    <link href="{{ url_for('static', filename='style.css') }}?v=3" rel="stylesheet" />
-    <style>
+    <link href="{{ url_for('static', filename='style.css') }}?v=5" rel="stylesheet" />
+  <style>
       :root {
         --sidebar-width: 260px;
         --sidebar-collapsed: 70px;
+        --bg-body: var(--bg-primary);
       }
       
       /* Dashboard Sidebar Layout */
@@ -94,6 +95,11 @@
       .user-dropdown .divider { border-top: 1px solid rgba(255,255,255,0.06); margin: 4px 0; }
       .user-dropdown .logout-link { color: var(--danger, #e74c7b); }
       .user-dropdown .logout-link i { color: var(--danger, #e74c7b); }
+
+      /* Light mode overrides for layout elements */
+      body.light-mode .user-menu-btn:hover {
+        background: rgba(0,0,0,0.05);
+      }
     </style>
   </head>
   <body>

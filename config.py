@@ -3,11 +3,11 @@ import os
 # ── Supabase ──────────────────────────────────────────────
 SUPABASE_URL = os.environ.get(
     "SUPABASE_URL",
-    "https://xbyqiggasssjuuiwfaex.supabase.co"
+    "https://uzhudokuovsjqlwixcpz.supabase.co"
 )
 SUPABASE_KEY = os.environ.get(
     "SUPABASE_KEY",
-    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InhieXFpZ2dhc3NzanV1aXdmYWV4Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MzgxNTkxNCwiZXhwIjoyMDg5MzkxOTE0fQ.uZvdRwo9BpOu7sJGT6-AX2Y0AsVFhJhBHlNiLK9-pro"
+    "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InV6aHVkb2t1b3ZzanFsd2l4Y3B6Iiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MTg3NTU5NywiZXhwIjoyMTA3NDUxNTk3fQ.WRGs0QBo_8npkvIrvjo9Rk1GGAPDEbyPuo5vbm97bS4"
 )
 
 # ── Flask ──────────────────────────────────────────────────
