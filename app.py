@@ -779,7 +779,7 @@ def test_email():
         flash("Admin access required.", "warning")
         return redirect("/")
     
-    success = send_alert("This is a diagnostic test email to verify your Render/Gmail connection.", "Test Email")
+    success = send_alert("This is a diagnostic test email to verify your Brevo API email connection.", "Test Email — Brevo API")
     if success:
         flash("✅ Test email sent! Check your inbox (and spam).", "success")
     else:
