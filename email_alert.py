@@ -1,18 +1,18 @@
 import os
-import ssl
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
-from email.utils import formatdate, make_msgid, formataddr
-from datetime import datetime
-
 import time
 import threading
+import requests
+from datetime import datetime
 
-from sql_queries import get_setting, get_system_settings
+from sql_queries import get_system_settings
 
+# ─────────────────────────────────────────────
+#  Config cache — avoids hitting DB on every email
+# ─────────────────────────────────────────────
 _CONFIG_CACHE = None
 _CONFIG_CACHE_TIME = 0
+
+BREVO_API_URL = "https://api.brevo.com/v3/smtp/email"
 
 
 def clear_config_cache():
@@ -23,73 +23,48 @@ def clear_config_cache():
 
 
 def _get_config():
-    """Resolve email config with in-memory caching to prevent multi-second DB latency."""
+    """
+    Resolve email config with in-memory caching (5 min TTL).
+
+    Priority:
+      1. Environment variables  (set these on Render)
+      2. Supabase system_settings table  (set via Admin Dashboard)
+
+    Returns: (brevo_api_key, sender_email, admin_email)
+    """
     global _CONFIG_CACHE, _CONFIG_CACHE_TIME
     now = time.time()
     if _CONFIG_CACHE and (now - _CONFIG_CACHE_TIME) < 300:
         return _CONFIG_CACHE
 
     settings = get_system_settings()
-    sender_email    = os.environ.get("SENDER_EMAIL")   or settings.get("sender_email",   "")
-    sender_password = os.environ.get("SENDER_PASSWORD") or settings.get("sender_password", "")
-    admin_email     = os.environ.get("ADMIN_EMAIL")    or settings.get("admin_email",    "")
-    _CONFIG_CACHE = (sender_email, sender_password, admin_email)
+
+    # BREVO_API_KEY: env var takes priority; fall back to sender_password DB column
+    # (so existing DB-stored values still work without a migration)
+    brevo_api_key = (
+        os.environ.get("BREVO_API_KEY")
+        or settings.get("sender_password", "")
+    )
+    sender_email = (
+        os.environ.get("SENDER_EMAIL")
+        or settings.get("sender_email", "")
+    )
+    admin_email = (
+        os.environ.get("ADMIN_EMAIL")
+        or settings.get("admin_email", "")
+    )
+
+    _CONFIG_CACHE = (brevo_api_key, sender_email, admin_email)
     _CONFIG_CACHE_TIME = now
     return _CONFIG_CACHE
 
 
-def send_alert_async(message: str, subject: str = None, to_email: str = None):
-    """
-    Fire-and-forget background email sender.
-    Does not block HTTP requests, responding immediately to the user.
-    """
-    t = threading.Thread(target=send_alert, args=(message, subject, to_email), daemon=True)
-    t.start()
-    return t
-
-
-def send_alert(message: str, subject: str = None, to_email: str = None) -> bool:
-    """
-    Send an email alert via Gmail SMTP with proper headers and multipart HTML.
-    Uses the sender_email + sender_password (Gmail App Password) from DB/env.
-    Returns True if successful, False otherwise.
-    """
-    sender_email, sender_password, admin_email = _get_config()
-    recipient     = to_email or admin_email
-    email_subject = subject or "Security Alert — Tech Africa IT Secure Access System"
-
-    if not sender_email or not sender_password:
-        print("[EMAIL ERROR] sender_email or sender_password is not configured.", flush=True)
-        return False
-
-    if not recipient:
-        print("[EMAIL ERROR] No recipient email configured.", flush=True)
-        return False
-
-    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-
-    # Clean plain-text body
-    text_body = (
-        f"Tech Africa IT Secure Access System\n"
-        f"Date: {now}\n\n"
-        f"{message}\n\n"
-        f"--\nTech Africa IT Security & Support Team"
-    )
-
-    print(f"[EMAIL DEBUG] Sending to {recipient} via Gmail SMTP...", flush=True)
-
-    try:
-        msg = MIMEMultipart("alternative")
-        msg["From"] = formataddr(("Tech Africa IT Support", sender_email))
-        msg["To"] = recipient
-        msg["Subject"] = email_subject
-        msg["Date"] = formatdate(localtime=True)
-        msg["Message-ID"] = make_msgid(domain="gmail.com")
-        msg["Reply-To"] = sender_email
-
-        # Clean HTML body formatted for deliverability
-        formatted_message = message.replace('\n', '<br>')
-        html_body = f"""<!DOCTYPE html>
+# ─────────────────────────────────────────────
+#  HTML email template (unchanged look)
+# ─────────────────────────────────────────────
+def _build_html(message: str) -> str:
+    formatted = message.replace('\n', '<br>')
+    return f"""<!DOCTYPE html>
 <html>
 <head>
 <meta charset="utf-8">
@@ -108,7 +83,7 @@ def send_alert(message: str, subject: str = None, to_email: str = None) -> bool:
     <h2>Tech Africa IT Portal</h2>
   </div>
   <div class="main">
-    {formatted_message}
+    {formatted}
   </div>
   <div class="foot">
     Tech Africa IT Secure Access System &bull; Automated Notification
@@ -117,32 +92,107 @@ def send_alert(message: str, subject: str = None, to_email: str = None) -> bool:
 </body>
 </html>"""
 
-        msg.attach(MIMEText(text_body, "plain", "utf-8"))
-        msg.attach(MIMEText(html_body, "html", "utf-8"))
 
-        # Use STARTTLS on port 587 (more compatible with cloud hosts like Render)
-        with smtplib.SMTP("smtp.gmail.com", 587, timeout=15) as server:
-            server.ehlo()
-            server.starttls(context=ssl.create_default_context())
-            server.ehlo()
-            server.login(sender_email, sender_password)
-            server.sendmail(sender_email, recipient, msg.as_string())
+# ─────────────────────────────────────────────
+#  Core send function — Brevo REST API over HTTPS
+# ─────────────────────────────────────────────
+def send_alert(message: str, subject: str = None, to_email: str = None) -> bool:
+    """
+    Send an email via the Brevo Transactional Email API (HTTPS/port 443).
+    This replaces the previous SMTP approach which is blocked on Render.
 
-        print(f"[EMAIL SUCCESS] Sent to {recipient} | Subject: {email_subject}", flush=True)
-        return True
+    Returns True on success, False on any failure.
+    """
+    brevo_api_key, sender_email, admin_email = _get_config()
+    recipient     = to_email or admin_email
+    email_subject = subject or "Security Alert — Tech Africa IT Secure Access System"
 
-    except smtplib.SMTPAuthenticationError:
-        print("[EMAIL ERROR] Gmail authentication failed. Check sender_email and sender_password (App Password).", flush=True)
+    # ── Validate config ────────────────────────────────────────────────
+    if not brevo_api_key:
+        print("[EMAIL ERROR] BREVO_API_KEY is not set. "
+              "Add it in Render → Environment variables.", flush=True)
+        return False
+
+    if not sender_email:
+        print("[EMAIL ERROR] SENDER_EMAIL is not set.", flush=True)
+        return False
+
+    if not recipient:
+        print("[EMAIL ERROR] No recipient email configured. "
+              "Set ADMIN_EMAIL env var or update System Settings in the Admin Dashboard.", flush=True)
+        return False
+
+    # ── Build payload ──────────────────────────────────────────────────
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    text_body = (
+        f"Tech Africa IT Secure Access System\n"
+        f"Date: {now}\n\n"
+        f"{message}\n\n"
+        f"--\nTech Africa IT Security & Support Team"
+    )
+
+    payload = {
+        "sender":      {"name": "Tech Africa IT Support", "email": sender_email},
+        "to":          [{"email": recipient}],
+        "subject":     email_subject,
+        "textContent": text_body,
+        "htmlContent": _build_html(message),
+    }
+
+    headers = {
+        "accept":       "application/json",
+        "content-type": "application/json",
+        "api-key":      brevo_api_key,
+    }
+
+    print(f"[EMAIL DEBUG] Sending via Brevo API to: {recipient} | Subject: {email_subject}", flush=True)
+
+    # ── Call Brevo API ─────────────────────────────────────────────────
+    try:
+        response = requests.post(
+            BREVO_API_URL,
+            json=payload,
+            headers=headers,
+            timeout=15,
+        )
+
+        if response.status_code in (200, 201):
+            print(f"[EMAIL SUCCESS] Sent to {recipient} | "
+                  f"Brevo messageId: {response.json().get('messageId', 'n/a')}", flush=True)
+            return True
+        else:
+            print(f"[EMAIL ERROR] Brevo API returned {response.status_code}: {response.text}", flush=True)
+            return False
+
+    except requests.exceptions.ConnectionError as e:
+        print(f"[EMAIL ERROR] Network error calling Brevo API: {e}", flush=True)
+        return False
+    except requests.exceptions.Timeout:
+        print("[EMAIL ERROR] Brevo API request timed out.", flush=True)
         return False
     except Exception as e:
         print(f"[EMAIL ERROR] Unexpected error: {e}", flush=True)
         return False
 
 
+# ─────────────────────────────────────────────
+#  Async wrapper — fire-and-forget (preserves existing behaviour)
+# ─────────────────────────────────────────────
+def send_alert_async(message: str, subject: str = None, to_email: str = None):
+    """
+    Non-blocking email send — runs in a background thread so HTTP
+    responses are instant even if the API call takes a second or two.
+    """
+    t = threading.Thread(target=send_alert, args=(message, subject, to_email), daemon=True)
+    t.start()
+    return t
+
+
+# ─────────────────────────────────────────────
+#  Convenience wrapper — intrusion alerts to admin
+# ─────────────────────────────────────────────
 def send_intrusion_alert(username: str, reason: str, ip_address: str = None):
-    """
-    Convenience wrapper for intrusion-specific alerts sent to the admin.
-    """
+    """Send a security/intrusion alert to the configured admin email."""
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     lines = [
         "INTRUSION / SECURITY EVENT DETECTED",

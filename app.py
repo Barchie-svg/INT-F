@@ -787,6 +787,123 @@ def test_email():
     
     return redirect(url_for('admin_dashboard'))
 
+
+@app.route("/admin/email-diagnostic")
+def email_diagnostic():
+    """
+    Brevo API diagnostic — tests every step and returns JSON.
+    Visit /admin/email-diagnostic while logged in as admin.
+    """
+    if not session.get("admin_logged_in"):
+        return jsonify({"error": "Admin login required"}), 401
+
+    import requests as req
+    results = {"steps": [], "conclusion": ""}
+
+    def step(name, status, detail=""):
+        results["steps"].append({"step": name, "status": status, "detail": detail})
+
+    # ── Step 1: Environment variables ──────────────────────────────────
+    env_api_key    = os.environ.get("BREVO_API_KEY", "")
+    env_sender     = os.environ.get("SENDER_EMAIL", "")
+    env_admin      = os.environ.get("ADMIN_EMAIL", "")
+    step("1a. Env BREVO_API_KEY",  "SET" if env_api_key else "NOT SET",
+         f"{len(env_api_key)} chars" if env_api_key else "(empty)")
+    step("1b. Env SENDER_EMAIL",   "SET" if env_sender  else "NOT SET", env_sender  or "(empty)")
+    step("1c. Env ADMIN_EMAIL",    "SET" if env_admin   else "NOT SET (will try DB)", env_admin or "(empty)")
+
+    # ── Step 2: Database settings ──────────────────────────────────────
+    try:
+        settings   = get_system_settings()
+        db_api_key = settings.get("sender_password", "")   # stored in sender_password column
+        db_sender  = settings.get("sender_email",    "")
+        db_admin   = settings.get("admin_email",     "")
+        step("2a. DB api_key (sender_password col)", "OK" if db_api_key else "EMPTY",
+             f"{len(db_api_key)} chars" if db_api_key else "(empty)")
+        step("2b. DB sender_email", "OK" if db_sender else "EMPTY", db_sender or "(empty)")
+        step("2c. DB admin_email",  "OK" if db_admin  else "EMPTY", db_admin  or "(empty)")
+    except Exception as e:
+        step("2. DB settings", "ERROR", str(e))
+        db_api_key = db_sender = db_admin = ""
+
+    # ── Step 3: Resolve final values ───────────────────────────────────
+    final_api_key = env_api_key or db_api_key
+    final_sender  = env_sender  or db_sender
+    final_admin   = env_admin   or db_admin
+    step("3a. Final BREVO_API_KEY", "OK" if final_api_key else "MISSING",
+         f"{len(final_api_key)} chars" if final_api_key else "NONE — cannot send")
+    step("3b. Final SENDER_EMAIL",  "OK" if final_sender  else "MISSING", final_sender or "NONE")
+    step("3c. Final ADMIN_EMAIL",   "OK" if final_admin   else "MISSING", final_admin  or "NONE")
+
+    if not final_api_key or not final_sender or not final_admin:
+        results["conclusion"] = (
+            "FAILED: Missing credentials. "
+            "Set BREVO_API_KEY, SENDER_EMAIL, and ADMIN_EMAIL in Render → Environment."
+        )
+        return jsonify(results)
+
+    # ── Step 4: HTTPS reachability (no SMTP involved) ──────────────────
+    try:
+        ping = req.get("https://api.brevo.com", timeout=8)
+        step("4. HTTPS reach api.brevo.com", "OK", f"HTTP {ping.status_code}")
+    except Exception as e:
+        step("4. HTTPS reach api.brevo.com", "FAILED", str(e))
+        results["conclusion"] = "FAILED: Cannot reach api.brevo.com over HTTPS."
+        return jsonify(results)
+
+    # ── Step 5: Validate API key (account info endpoint) ──────────────
+    try:
+        r = req.get(
+            "https://api.brevo.com/v3/account",
+            headers={"api-key": final_api_key, "accept": "application/json"},
+            timeout=10,
+        )
+        if r.status_code == 200:
+            plan = r.json().get("plan", [{}])
+            step("5. API key valid", "OK", f"Account OK | plan: {plan}")
+        elif r.status_code == 401:
+            step("5. API key valid", "INVALID", r.text)
+            results["conclusion"] = (
+                "FAILED: Brevo rejected the API key. "
+                "Go to Brevo → SMTP & API → API Keys and copy the full key."
+            )
+            return jsonify(results)
+        else:
+            step("5. API key valid", f"HTTP {r.status_code}", r.text[:200])
+    except Exception as e:
+        step("5. API key valid", "ERROR", str(e))
+
+    # ── Step 6: Send real test email ───────────────────────────────────
+    try:
+        payload = {
+            "sender":      {"name": "Tech Africa IT Support", "email": final_sender},
+            "to":          [{"email": final_admin}],
+            "subject":     "Render Email Diagnostic — SUCCESS",
+            "textContent": "This diagnostic email confirms that Brevo API email delivery is working correctly on your Render deployment.",
+        }
+        r = req.post(
+            "https://api.brevo.com/v3/smtp/email",
+            json=payload,
+            headers={
+                "api-key":      final_api_key,
+                "accept":       "application/json",
+                "content-type": "application/json",
+            },
+            timeout=15,
+        )
+        if r.status_code in (200, 201):
+            step("6. Send test email", "OK",
+                 f"Sent to {final_admin} | messageId: {r.json().get('messageId', 'n/a')}")
+            results["conclusion"] = "ALL PASSED — Email sent! Check your inbox (and spam folder)."
+        else:
+            step("6. Send test email", f"FAILED (HTTP {r.status_code})", r.text[:300])
+            results["conclusion"] = f"FAILED: Brevo send returned {r.status_code}. See detail above."
+    except Exception as e:
+        step("6. Send test email", "ERROR", str(e))
+        results["conclusion"] = f"FAILED: {e}"
+
+    return jsonify(results)
+
 if __name__ == "__main__":
     import os
     port = int(os.environ.get("PORT", 5000))
