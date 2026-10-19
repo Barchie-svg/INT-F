@@ -120,7 +120,11 @@ def send_alert(message: str, subject: str = None, to_email: str = None) -> bool:
         msg.attach(MIMEText(text_body, "plain", "utf-8"))
         msg.attach(MIMEText(html_body, "html", "utf-8"))
 
-        with smtplib.SMTP_SSL("smtp.gmail.com", 465, timeout=15, context=ssl.create_default_context()) as server:
+        # Use STARTTLS on port 587 (more compatible with cloud hosts like Render)
+        with smtplib.SMTP("smtp.gmail.com", 587, timeout=15) as server:
+            server.ehlo()
+            server.starttls(context=ssl.create_default_context())
+            server.ehlo()
             server.login(sender_email, sender_password)
             server.sendmail(sender_email, recipient, msg.as_string())
 

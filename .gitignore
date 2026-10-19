@@ -27,3 +27,9 @@ Thumbs.db
 
 # VS Code
 .vscode/
+
+.env
+.env.*
+!.env.example
+__pycache__/
+*.py[cod]
